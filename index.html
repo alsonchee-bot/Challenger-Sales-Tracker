@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Murano Sell-Thru Tracker</title>
+<!doctype html><html lang="en" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Murano Sell-Thru Tracker</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <script src="xlsx.full.min.js"></script>
 <style>
@@ -116,7 +116,65 @@ td.desc{white-space:normal;min-width:220px;max-width:340px}
 .exbd{padding:12px 16px;overflow:auto}.exsec{margin-bottom:16px}.exlab{font-weight:600;margin-bottom:6px}
 .exgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:4px 12px;margin-top:6px}.exchk{display:flex;gap:6px;align-items:center;cursor:pointer}.exchk.all{font-weight:500}.exchk.dim{opacity:.55}
 .exrange{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px}.exrange select{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:6px;padding:5px 8px}.exsum{color:var(--ink-3);font-size:13px}
-</style></head><body>
+.shell{display:grid;grid-template-columns:260px minmax(0,1fr);gap:20px;align-items:start}
+.res{min-width:0}
+.side{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 14px 10px;position:sticky;top:12px;display:flex;flex-direction:column;gap:16px}
+.sd-lab{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);margin-bottom:6px}.sd-lab label{cursor:pointer}
+.side select{width:100%}
+.side .seg{display:flex;width:100%;margin:0 !important}.side .seg button{flex:1}
+.brandlist{display:flex;flex-direction:column;gap:4px}
+.bl{display:flex;align-items:center;gap:10px;border:1px solid transparent;background:transparent;border-radius:6px;padding:6px 8px;text-align:left;font-weight:500}
+.bl:hover{background:var(--surface-2)}.bl.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.blogo{width:92px;height:40px;padding:4px 6px;box-sizing:border-box;border-radius:6px;background:#fff;border:1px solid var(--line-soft);display:grid;place-items:center;overflow:hidden;flex:none}
+.blogo img{max-width:100%;max-height:100%;object-fit:contain;display:block}
+.wm{width:100%;height:100%;display:grid;place-items:center;font-weight:700;font-size:13px;letter-spacing:.02em;color:#fff;background:var(--s1)}
+.wm.all{background:var(--surface-2);color:var(--ink-2)}.wm.c1{background:var(--s2)}.wm.c2{background:var(--s3)}.wm.c3{background:var(--s4)}.wm.c4{background:var(--s5)}
+.bname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sd-note{border-top:1px solid var(--line-soft);padding-top:10px}
+@media (max-width:900px){.shell{grid-template-columns:minmax(0,1fr)}.side{position:static}.brandlist{flex-direction:row;flex-wrap:wrap}}
+
+/* ===== SKIN: Analytics-console look (preview) ===== */
+:root,:root[data-theme="dark"]{
+  --bg:#f0f2f4; --surface:#ffffff; --surface-2:#f4f6f8; --line:#d7dce1; --line-soft:#e6e9ec;
+  --ink:#000a1e; --ink-2:#3b4857; --ink-3:#5d6c7b;
+  --accent:#0a6fc2; --accent-ink:#ffffff; --accent-soft:#e1f0fb;
+  --s1:#0a6fc2; --s2:#7a4fc4; --s3:#13b5ea; --s4:#f5a623; --s5:#d6468e;
+  --font:'Helvetica Neue',Helvetica,Arial,system-ui,sans-serif; color-scheme:light}
+body{margin:0;padding:0 0 48px;font-size:15px}
+.nav{background:#064b78;color:#fff;height:62px;display:flex;align-items:center;gap:8px;padding:0 24px;position:sticky;top:0;z-index:40}
+.nav .logo{display:flex;align-items:center;gap:12px;margin-right:6px}.nav .logo img{height:46px;width:auto;background:#fff;border-radius:6px;padding:3px 8px}.nav .logo span{font-weight:500;font-size:20px}
+.nav .org{background:#053a5c;border-radius:22px;padding:10px 22px;font-weight:500;margin:0 18px 0 10px}
+.nav a{color:#cfe3f1;text-decoration:none;padding:21px 14px 17px;border-bottom:3px solid transparent;font-weight:500;cursor:pointer;display:inline-block}
+.nav a:hover{color:#fff}.nav a.on{color:#fff;border-bottom-color:#8fb4d0}
+.nav .sp{flex:1}.nav .ic{width:42px;height:42px;border-radius:50%;background:#0b5a8a;display:grid;place-items:center;font-weight:600}
+.wrap{max-width:1360px;padding:0 32px;gap:18px}
+.top{padding-top:22px;align-items:center}
+.top .sub{font-size:16px;color:var(--ink);margin:2px 0 0}
+.btn{border-radius:4px;border-color:#a2aab3;font-weight:600;color:#0a6fc2;background:#fff;padding:9px 14px}
+.btn:hover{background:#f0f7fd}
+.btn.primary{background:#0a6fc2;border-color:#0a6fc2;color:#fff}.btn.primary:hover{background:#085fa6;filter:none}
+.btn.danger{color:#b4271f}
+.badge{border-radius:14px;background:#fff}
+.panel,.kpi{border-radius:4px;border-color:#d7dce1;box-shadow:0 1px 0 rgba(0,10,30,.04)}
+.panel>header h2,h2{font-size:17px;font-weight:700}
+.kpi .l{text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink);font-weight:600}
+.kpi .v{font-size:34px;font-weight:400;letter-spacing:-.01em}
+.field label{text-transform:none;letter-spacing:0;font-size:13px;color:var(--ink-2);font-weight:600}
+select{border-radius:4px;border-color:#a2aab3;background:#fff;padding:8px 10px;font-weight:500}
+.bar{background:#fff;border:1px solid var(--line);border-radius:4px;padding:10px 14px}
+/* view switch becomes underline tabs */
+.seg[aria-label="View"]{border:0;border-bottom:1px solid #d7dce1;border-radius:0;display:flex;gap:6px;background:transparent;width:100%}
+.seg[aria-label="View"] button{background:transparent;color:#0a6fc2;font-size:17px;font-weight:500;padding:12px 20px;border-bottom:3px solid transparent;margin-bottom:-1px}
+.seg[aria-label="View"] button[aria-pressed="true"]{background:transparent;color:#0a6fc2;border-bottom-color:#0a6fc2}
+.seg:not([aria-label="View"]){border-radius:4px;border-color:#a2aab3}
+.seg:not([aria-label="View"]) button[aria-pressed="true"]{background:#0a6fc2;color:#fff}
+th{font-weight:600}
+.side{border-radius:4px;top:78px}.side .seg[aria-label="View"] button{font-size:15px;padding:8px 12px}.sd-lab{text-transform:none;letter-spacing:0;font-size:14px;font-weight:700;color:var(--ink)}
+.bl.on{background:#e1f0fb;border-color:#0a6fc2;color:#0a6fc2}.bl{border-radius:4px}
+
+.exbox{border-radius:4px}.exhd b{font-size:20px}
+</style></head><body><div class="nav"><span class="logo"><img src="logo-murano.png" alt="Murano"><span>Analytics</span></span><span class="org">Challenger</span>
+<a class="on">Graphs</a><a data-nav="imp">Data input</a><a data-nav="exp">Export</a><span class="sp"></span><span class="ic">?</span><span class="ic">&#8962;</span></div>
 
 <div class="wrap">
   <div class="top">
@@ -295,13 +353,9 @@ function render(){
   var w=W(S.sel)||S.weeks[S.weeks.length-1];S.sel=w.id;if(S.outlet&&w.outlets.indexOf(S.outlet)<0)S.outlet=null;
   var idx=S.weeks.indexOf(w),prev=idx>0?S.weeks[idx-1]:null;
   var t=totals(w,S.outlet),tp=prev?totals(prev,S.outlet):null,cv=cover(w.id,S.outlet),cvp=prev?cover(prev.id,S.outlet):null;
-  var h=tabs();
-  h+='<div class="bar" style="margin-bottom:16px">'+brandField()+'<div class="field"><label for="selWeek">Week</label><select id="selWeek">'+S.weeks.slice().reverse().map(function(x){return'<option value="'+esc(x.id)+'"'+(x.id===S.sel?' selected':'')+'>'+x.year+' · Wk '+x.week+'</option>'}).join('')+'</select></div>';
-  h+='<div class="field"><label for="selOutlet">Outlet</label><select id="selOutlet"><option value="">All '+w.outlets.length+' outlets</option>'+w.outlets.map(function(o){return'<option'+(o===S.outlet?' selected':'')+'>'+esc(o)+'</option>'}).join('')+'</select></div>';
-  if(S.outlet)h+='<span class="chip">Outlet '+esc(S.outlet)+'<button id="clrOutlet" aria-label="Show all outlets">×</button></span>';
-  h+='<span class="sub">Report run '+esc((w.executed||'').replace(/\s*\(.*\)/,''))+'</span></div>';
+  var side=sideHtml(w),h='';
   if(S.brand==='ALL'){var tb=brands().length,pw=S.weeks.filter(function(x){return x.nb<tb});if(pw.length)h+='<div class="sub" style="margin:-6px 0 14px">'+pw.map(wlabel).join(', ')+(pw.length>1?' have':' has')+' data for fewer brands, so totals and week-to-week changes in All brands are not like for like.</div>'}
-  if(S.view==='charts'){m.innerHTML=h+chartsView(w);bindBar();drawCharts(w);return}
+  if(S.view==='charts'){m.innerHTML=shell(side,h+chartsView(w));bindBar();drawCharts(w);return}
   h+='<div class="kpis">'+
    kpi('Stock on hand',fmt(t&&t.soh),delta(t&&t.soh,tp&&tp.soh,null,true))+
    kpi('Sell-thru (units)',fmt(t&&t.st),delta(t&&t.st,tp&&tp.st))+
@@ -314,7 +368,7 @@ function render(){
   h+='<section class="panel" style="margin-top:12px"><header><h2>Outlet × SKU grid</h2><div class="seg" role="group" aria-label="Metric"><button data-heat="soh" aria-pressed="'+(S.heat==='soh')+'">Stock on hand</button><button data-heat="st" aria-pressed="'+(S.heat==='st')+'">Sell-thru</button></div></header><div class="body"><div class="heat" id="heat"></div><div class="legend" style="margin-top:10px" id="heatLegend"></div></div></section>';
   h+='<section class="panel" style="margin-top:12px"><header><h2>SKUs</h2><span class="sub">'+esc(wlabel(w))+(S.outlet?' · '+esc(S.outlet):' · all outlets')+'</span></header><div class="body tbl" id="skuTbl"></div></section>';
   h+='<section class="panel" style="margin-top:12px"><header><h2>Loaded weeks</h2><span class="sub">Importing a week that already exists replaces it. <button class="btn sm" id="btnReset" type="button">Reset to published data</button> <button class="btn sm" id="btnDlData" type="button">Download data file</button></span></header><div class="body tbl" id="wkTbl"></div></section>';
-  m.innerHTML=h;
+  m.innerHTML=shell(side,h);
   bindBar();
   /* charts */
   var ser=S.weeks.map(function(x){return totals(x,S.outlet)||{soh:0,st:0}});
@@ -406,6 +460,28 @@ function coverG(id,o,sid){
 }
 function mv(w,metric,o,sid){var a=agg(w,o,sid);if(!a)return null;return metric==='cover'?coverG(w.id,o,sid):a[metric]}
 function fOf(metric){return metric==='rate'?pct:metric==='cover'?f1:fmt}
+function shell(side,res){return'<div class="shell"><aside class="side" aria-label="Selections">'+side+'</aside><div class="res">'+res+'</div></div>'}
+function slug(b){return String(b).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}
+function logoHtml(b,i){
+  if(b==='ALL')return'<span class="wm all" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M3 3h8v8H3zm10 0h8v8h-8zM3 13h8v8H3zm10 0h8v8h-8z"/></svg></span>';
+  return'<img class="lg" src="logo-'+slug(b)+'.png" alt="" data-n="'+esc(b)+'" data-i="'+(i%5)+'">'
+}
+function wmFix(){
+  document.querySelectorAll('img.lg').forEach(function(img){
+    var fix=function(){var n=img.getAttribute('data-n')||'',sp=document.createElement('span');sp.className='wm c'+img.getAttribute('data-i');sp.setAttribute('aria-hidden','true');sp.textContent=n.replace(/[^A-Za-z0-9]/g,'').slice(0,2).toUpperCase();if(img.parentNode)img.parentNode.replaceChild(sp,img)};
+    if(img.complete&&img.naturalWidth===0)fix();else img.onerror=fix
+  })
+}
+function sideHtml(w){
+  var bl=brands(),items=[];if(bl.length>1)items.push(['ALL','All brands']);bl.forEach(function(b){items.push([b,b])});
+  var s='<div class="sd-sec"><div class="sd-lab">View</div>'+tabs()+'</div>';
+  s+='<div class="sd-sec"><div class="sd-lab">Brand</div><div class="brandlist" role="group" aria-label="Brand">'+items.map(function(it,i){return'<button type="button" class="bl'+(S.brand===it[0]?' on':'')+'" data-brand="'+esc(it[0])+'" aria-pressed="'+(S.brand===it[0])+'"><span class="blogo">'+logoHtml(it[0],i)+'</span><span class="bname">'+esc(it[1])+'</span></button>'}).join('')+'</div></div>';
+  s+='<div class="sd-sec"><div class="sd-lab"><label for="selWeek">Week</label></div><select id="selWeek">'+S.weeks.slice().reverse().map(function(x){return'<option value="'+esc(x.id)+'"'+(x.id===S.sel?' selected':'')+'>'+x.year+' · Wk '+x.week+'</option>'}).join('')+'</select></div>';
+  s+='<div class="sd-sec"><div class="sd-lab"><label for="selOutlet">Outlet</label></div><select id="selOutlet"><option value="">All '+w.outlets.length+' outlets</option>'+w.outlets.map(function(o){return'<option'+(o===S.outlet?' selected':'')+'>'+esc(o)+'</option>'}).join('')+'</select>';
+  if(S.outlet)s+='<div style="margin-top:8px"><span class="chip">Outlet '+esc(S.outlet)+'<button id="clrOutlet" aria-label="Show all outlets">×</button></span></div>';
+  s+='</div><div class="sub sd-note">Report run '+esc((w.executed||'').replace(/\s*\(.*\)/,''))+'</div>';
+  return s
+}
 function tabs(){return'<div class="seg" style="margin-bottom:14px" role="group" aria-label="View"><button data-view="dash" aria-pressed="'+(S.view==='dash')+'">Dashboard</button><button data-view="charts" aria-pressed="'+(S.view==='charts')+'">Charts</button></div>'}
 function selHtml(id,label,opts,cur){return'<div class="field"><label for="'+id+'">'+label+'</label><select id="'+id+'">'+opts.map(function(o){return'<option value="'+esc(o[0])+'"'+(String(cur)===String(o[0])?' selected':'')+'>'+esc(o[1])+'</option>'}).join('')+'</select></div>'}
 function brandField(){var bl=brands(),o=bl.map(function(b){return[b,b]});if(bl.length>1)o.unshift(['ALL','All brands']);return selHtml('selBrand','Brand',o,S.brand)}
@@ -541,7 +617,8 @@ function drawCharts(w){
 }
 function bindBar(){
   document.querySelectorAll('[data-view]').forEach(function(b){b.onclick=function(){S.view=b.getAttribute('data-view');render()}});
-  $('#selBrand').onchange=function(e){S.brand=e.target.value;derive();render()};
+  document.querySelectorAll('[data-brand]').forEach(function(b){b.onclick=function(){S.brand=b.getAttribute('data-brand');derive();render()}});
+  wmFix();
   $('#selWeek').onchange=function(e){S.sel=e.target.value;render()};
   $('#selOutlet').onchange=function(e){S.outlet=e.target.value||null;render()};
   var c=$('#clrOutlet');if(c)c.onclick=function(){S.outlet=null;render()}
@@ -745,4 +822,9 @@ document.addEventListener('click',function(e){if(!e.target)return;
 fetch('weeks.json?v='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.json():null}).then(function(a){if(Array.isArray(a)){SEED=a.map(norm);PUB.ok=true;PUB.n=SEED.length;var bs={};SEED.forEach(function(w){bs[w.brand]=1});PUB.b=Object.keys(bs).length}}).catch(function(){}).then(start);
 })();
 </script>
-</body></html>
+<script>
+document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('[data-nav]');if(!a)return;var k=a.getAttribute('data-nav');
+ if(k==='imp'){document.getElementById('btnImport').click();return}
+ if(k==='exp'){document.getElementById('btnExport').click();return}
+ });
+</script></body></html>
