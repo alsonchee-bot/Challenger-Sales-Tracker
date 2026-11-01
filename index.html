@@ -186,6 +186,7 @@ th{font-weight:600}
       <span class="badge" id="storeBadge" hidden></span>
       <input type="file" id="file" accept=".xlsx,.xls" multiple hidden>
       <button class="btn primary" id="btnImport">Import weekly file</button>
+      <button class="btn" id="btnAuth" type="button">Sign in</button>
       <button class="btn" id="btnExport">Export data</button>
     </div>
   </div>
@@ -244,30 +245,17 @@ function derive(){
 }
 function sortWeeks(){derive()}
 function withWeeks(list,fn){var keep=S.weeks;S.weeks=list;try{return fn()}finally{S.weeks=keep}}
-/*LS-START*/
-var SEED=[];
-function lsGet(){
-  var base=SEED.slice(),loc={w:[],r:[]};
-  try{var v=localStorage.getItem('pg-local');if(v)loc=JSON.parse(v)}catch(e){}
-  base=base.filter(function(w){return(loc.r||[]).indexOf(wkey(w))<0});
-  (loc.w||[]).forEach(function(w){norm(w);var i=base.findIndex(function(x){return wkey(x)===wkey(w)});if(i>=0)base[i]=w;else base.push(w)});
-  return base
-}
-function lsSet(){
-  try{var sid={};SEED.forEach(function(w){sid[wkey(w)]=JSON.stringify(w)});
-    var w=S.all.filter(function(x){return sid[wkey(x)]!==JSON.stringify(x)}),r=SEED.filter(function(x){return!S.all.some(function(y){return wkey(y)===wkey(x)})}).map(wkey);
-    localStorage.setItem('pg-local',JSON.stringify({w:w,r:r}))}catch(e){}
-}
-/*LS-END*/
+function lsGet(){return S.all}
+function lsSet(){}
 function saveWeek(w){
-  norm(w);
-  if(S.col){return S.col.doc(docId(w)).set(w)}
-  var i=S.all.findIndex(function(x){return wkey(x)===wkey(w)});if(i>=0)S.all[i]=w;else S.all.push(w);derive();lsSet();return Promise.resolve()
+  norm(w);w.brand=String(w.brand).trim().toUpperCase();w.source=w.source||'import';
+  return sb.rpc('save_week',{w:w},true).then(function(){
+    var i=S.all.findIndex(function(x){return wkey(x)===wkey(w)});if(i>=0)S.all[i]=w;else S.all.push(w);derive()})
 }
 function removeWeek(k){
   var w=S.all.find(function(x){return wkey(x)===k});if(!w)return Promise.resolve();
-  if(S.col){return S.col.doc(docId(w)).delete()}
-  S.all=S.all.filter(function(x){return wkey(x)!==k});derive();lsSet();return Promise.resolve()
+  return sb.rpc('delete_week',{p_brand:w.brand,p_year:w.year,p_week:w.week},true).then(function(){
+    S.all=S.all.filter(function(x){return wkey(x)!==k});derive()})
 }
 
 /* ---------- metrics ---------- */
@@ -348,7 +336,7 @@ function render(){
   if(!S.loaded){m.innerHTML='<div class="panel"><div class="empty">Loading saved weeks…</div></div>';return}
   if(!S.all.length){
     m.innerHTML='<div class="panel"><div class="body"><div class="drop" id="drop"><div style="font-size:16px;font-weight:600;color:var(--ink)">No weeks loaded yet</div><p>Import the weekly “Sell-Thru &amp; SOH” Excel file from Murano. Each file adds one week for one brand. You can select several files at once.</p><button class="btn primary" id="emptyImport">Choose Excel file</button></div></div></div>';
-    $('#emptyImport').onclick=function(){$('#file').click()};bindDrop($('#drop'));return
+    $('#emptyImport').onclick=function(){sb.needAuth(function(){$('#file').click()},'Sign in to import weekly files.')};bindDrop($('#drop'));return
   }
   var w=W(S.sel)||S.weeks[S.weeks.length-1];S.sel=w.id;if(S.outlet&&w.outlets.indexOf(S.outlet)<0)S.outlet=null;
   var idx=S.weeks.indexOf(w),prev=idx>0?S.weeks[idx-1]:null;
@@ -367,7 +355,7 @@ function render(){
   h+='<section class="panel" style="margin-top:12px"><header><h2>Outlets</h2><span class="sub">'+esc(wlabel(w))+' · click a row to focus on one outlet</span></header><div class="body tbl" style="max-height:560px;overflow:auto" id="outTbl"></div></section>';
   h+='<section class="panel" style="margin-top:12px"><header><h2>Outlet × SKU grid</h2><div class="seg" role="group" aria-label="Metric"><button data-heat="soh" aria-pressed="'+(S.heat==='soh')+'">Stock on hand</button><button data-heat="st" aria-pressed="'+(S.heat==='st')+'">Sell-thru</button></div></header><div class="body"><div class="heat" id="heat"></div><div class="legend" style="margin-top:10px" id="heatLegend"></div></div></section>';
   h+='<section class="panel" style="margin-top:12px"><header><h2>SKUs</h2><span class="sub">'+esc(wlabel(w))+(S.outlet?' · '+esc(S.outlet):' · all outlets')+'</span></header><div class="body tbl" id="skuTbl"></div></section>';
-  h+='<section class="panel" style="margin-top:12px"><header><h2>Loaded weeks</h2><span class="sub">Importing a week that already exists replaces it. <button class="btn sm" id="btnReset" type="button">Reset to published data</button> <button class="btn sm" id="btnDlData" type="button">Download data file</button></span></header><div class="body tbl" id="wkTbl"></div></section>';
+  h+='<section class="panel" style="margin-top:12px"><header><h2>Loaded weeks</h2><span class="sub">Importing a week that already exists replaces it. Changes are saved to the shared database.</span></header><div class="body tbl" id="wkTbl"></div></section>';
   m.innerHTML=shell(side,h);
   bindBar();
   /* charts */
@@ -668,6 +656,7 @@ function parseWorkbook(wb,fname){
 }
 function handleFiles(files){
   files=Array.prototype.slice.call(files);if(!files.length)return;
+  if(!sb.signedIn()){sb.openAuth('Sign in to import weekly files.');return}
   if(typeof XLSX==='undefined'){toast('The Excel reader (xlsx.full.min.js) did not load. Make sure that file is in the repo root next to index.html.');return}
   var done=[],pending=files.length;
   files.forEach(function(f,i){
@@ -802,7 +791,7 @@ function deliver(buf,name){saveBlob(new Blob([buf],{type:'application/vnd.openxm
 function saveBlob(blob,name){var u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u)},4000)}
 
 /* ---------- boot ---------- */
-$('#btnImport').onclick=function(){$('#file').click()};
+$('#btnImport').onclick=function(){sb.needAuth(function(){$('#file').click()},'Sign in to import weekly files.')};
 $('#file').onchange=function(e){handleFiles(e.target.files);e.target.value=''};
 $('#btnExport').onclick=doExport;
 $('#impCancel').onclick=function(){S.staged=[];$('#importPanel').hidden=true};
@@ -811,15 +800,70 @@ document.addEventListener('dragover',function(e){e.preventDefault()});
 document.addEventListener('drop',function(e){e.preventDefault();if(e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files.length)handleFiles(e.dataTransfer.files)});
 var rt;window.addEventListener('resize',function(){clearTimeout(rt);rt=setTimeout(function(){if(S.all.length)render()},150)});
 function badge(t){var b=$('#storeBadge');b.textContent=t;b.hidden=false}
-function badgeText(){return'Browser changes on top of published data'}
-var PUB={n:0,b:0,ok:false};
-function start(){S.all=lsGet();S.loaded=true;derive();badge(PUB.ok?('Published data: '+PUB.n+' weeks, '+PUB.b+' brand'+(PUB.b===1?'':'s')):'Could not load weeks.json');render()}
-function resetLocal(){try{localStorage.removeItem('pg-local')}catch(e){}S.all=lsGet();derive();render();toast('Reset to the published data.')}
-function dataFile(){return'[\n'+S.all.slice().sort(function(a,b){return a.brand<b.brand?-1:a.brand>b.brand?1:byId(a,b)}).map(function(w){return JSON.stringify(w)}).join(',\n')+'\n]\n'}
-document.addEventListener('click',function(e){if(!e.target)return;
-  if(e.target.id==='btnReset')resetLocal();
-  if(e.target.id==='btnDlData'){saveBlob(new Blob([dataFile()],{type:'application/json'}),'weeks.json');toast('Saved weeks.json. Replace weeks.json in the repo and commit.')}});
-fetch('weeks.json?v='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.json():null}).then(function(a){if(Array.isArray(a)){SEED=a.map(norm);PUB.ok=true;PUB.n=SEED.length;var bs={};SEED.forEach(function(w){bs[w.brand]=1});PUB.b=Object.keys(bs).length}}).catch(function(){}).then(start);
+var SB_URL='https://eobbpalodywqszcrqyzt.supabase.co',SB_KEY='sb_publishable_Sz-CZ-ZnVDYRY0CMQR5Jyw_UzsDLEYa';
+var sb=(function(){
+  var AUTH=null,after=null;
+  try{AUTH=JSON.parse(localStorage.getItem('sb-auth')||'null')}catch(e){}
+  function save(a){AUTH=a;try{if(a)localStorage.setItem('sb-auth',JSON.stringify(a));else localStorage.removeItem('sb-auth')}catch(e){}paint()}
+  function paint(){var b=$('#btnAuth');if(b){b.textContent=AUTH?'Sign out':'Sign in';b.title=AUTH?('Signed in as '+AUTH.email):'Sign in to import or delete data'}}
+  function msg(r,j){return(j&&(j.message||j.msg||j.error_description||j.error))||('Request failed ('+r.status+')')}
+  function post(path,body,token){
+    return fetch(SB_URL+path,{method:'POST',headers:{'apikey':SB_KEY,'Content-Type':'application/json','Authorization':'Bearer '+(token||SB_KEY)},body:JSON.stringify(body)})
+      .then(function(r){return r.text().then(function(t){var j=null;try{j=t?JSON.parse(t):null}catch(e){}if(!r.ok){var e=new Error(msg(r,j));e.status=r.status;throw e}return j})})
+  }
+  function setSession(j){save({at:j.access_token,rt:j.refresh_token,exp:Math.floor(Date.now()/1000)+(j.expires_in||3600),email:(j.user&&j.user.email)||(AUTH&&AUTH.email)||''})}
+  function token(){
+    if(!AUTH)return Promise.resolve(null);
+    if(AUTH.exp-60>Date.now()/1000)return Promise.resolve(AUTH.at);
+    return post('/auth/v1/token?grant_type=refresh_token',{refresh_token:AUTH.rt}).then(function(j){setSession(j);return AUTH.at}).catch(function(){save(null);return null})
+  }
+  var api={
+    signedIn:function(){return!!AUTH},
+    rpc:function(name,args,needAuth){
+      return token().then(function(t){
+        if(needAuth&&!t){api.openAuth('Sign in to change data.');throw new Error('Sign in required')}
+        return post('/rest/v1/rpc/'+name,args||{},needAuth?t:null)
+      }).catch(function(e){if(e&&(e.status===401||e.status===403||/row-level security|permission denied/i.test(e.message||'')))e.message='Your login is not allowed to change data. Ask the admin to add your email as an editor.';throw e})
+    },
+    openAuth:function(note){
+      var d=$('#authDlg');if(!d){d=document.createElement('div');d.id='authDlg';d.className='exov';document.body.appendChild(d)}
+      d.hidden=false;
+      d.innerHTML='<div class="exbox" role="dialog" aria-label="Sign in" style="width:min(400px,100%)"><div class="exhd"><b>Sign in</b><button class="btn sm" id="auX" type="button">Close</button></div><form class="exbd" id="auForm"><div class="sub" style="margin-bottom:10px">'+(note||'Editors sign in to import or delete data. Viewing needs no login.')+'</div><label class="exlab" for="auEmail">Email</label><input id="auEmail" type="email" required autocomplete="username" style="width:100%;margin-bottom:10px;padding:8px;border:1px solid var(--line);border-radius:4px;background:var(--surface);color:var(--ink)"><label class="exlab" for="auPass">Password</label><input id="auPass" type="password" required autocomplete="current-password" style="width:100%;padding:8px;border:1px solid var(--line);border-radius:4px;background:var(--surface);color:var(--ink)"><div id="auErr" role="alert" style="color:var(--crit);margin-top:10px;min-height:18px"></div><div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="btn primary" id="auGo" type="submit">Sign in</button></div></form></div>';
+      setTimeout(function(){var e=$('#auEmail');if(e)e.focus()},30)
+    },
+    closeAuth:function(){var d=$('#authDlg');if(d)d.hidden=true},
+    needAuth:function(fn,note){if(AUTH)fn();else{after=fn;api.openAuth(note)}},
+    signIn:function(email,pass){
+      return post('/auth/v1/token?grant_type=password',{email:email,password:pass}).then(function(j){setSession(j);api.closeAuth();toast('Signed in as '+AUTH.email);var f=after;after=null;if(f)f()})
+    },
+    signOut:function(){if(AUTH){var t=AUTH.at;fetch(SB_URL+'/auth/v1/logout',{method:'POST',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+t}}).catch(function(){})}save(null);toast('Signed out.')},
+    paint:paint
+  };
+  document.addEventListener('click',function(e){var t=e.target;if(!t)return;
+    if(t.id==='btnAuth'){if(AUTH)api.signOut();else api.openAuth()}
+    if(t.id==='auX'||t.id==='authDlg')api.closeAuth()});
+  document.addEventListener('submit',function(e){if(e.target&&e.target.id==='auForm'){e.preventDefault();var b=$('#auGo');b.disabled=true;$('#auErr').textContent='';
+    api.signIn($('#auEmail').value.trim(),$('#auPass').value).catch(function(er){b.disabled=false;$('#auErr').textContent=/invalid/i.test(er.message)?'Wrong email or password.':er.message})}});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')api.closeAuth()});
+  return api
+})();
+var LIVE={raw:'',ok:false,off:false};
+function liveBadge(){var bl=brands().length;badge(LIVE.off?'Offline copy (read-only)':('Live data · '+S.all.length+' weeks, '+bl+' brand'+(bl===1?'':'s')))}
+function loadLive(first){
+  return sb.rpc('get_weeks',{},false).then(function(a){
+    if(!Array.isArray(a))throw new Error('bad response');
+    var raw=JSON.stringify(a);LIVE.off=false;
+    if(!first&&raw===LIVE.raw)return;
+    LIVE.raw=raw;S.all=a.map(norm);S.loaded=true;derive();liveBadge();render()
+  }).catch(function(){
+    if(!first)return;
+    return fetch('weeks.json?v='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.json():[]}).catch(function(){return[]}).then(function(a){LIVE.off=true;S.all=(a||[]).map(norm);S.loaded=true;derive();liveBadge();render()})
+  })
+}
+sb.paint();
+loadLive(true);
+setInterval(function(){if(!document.hidden&&!$('#importPanel').offsetParent&&!(($('#exDlg')&&!$('#exDlg').hidden)||($('#authDlg')&&!$('#authDlg').hidden)))loadLive(false)},60000);
+document.addEventListener('visibilitychange',function(){if(!document.hidden&&S.loaded)loadLive(false)});
 })();
 </script>
 <script>
