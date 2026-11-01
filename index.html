@@ -675,13 +675,14 @@ document.addEventListener('drop',function(e){e.preventDefault();if(e.dataTransfe
 var rt;window.addEventListener('resize',function(){clearTimeout(rt);rt=setTimeout(function(){if(S.all.length)render()},150)});
 function badge(t){var b=$('#storeBadge');b.textContent=t;b.hidden=false}
 function badgeText(){return'Browser changes on top of published data'}
-function start(){S.all=lsGet();S.loaded=true;derive();badge('Saved in this browser');render()}
+var PUB={n:0,b:0,ok:false};
+function start(){S.all=lsGet();S.loaded=true;derive();badge(PUB.ok?('Published data: '+PUB.n+' weeks, '+PUB.b+' brand'+(PUB.b===1?'':'s')):'Could not load data/weeks.json');render()}
 function resetLocal(){try{localStorage.removeItem('pg-local')}catch(e){}S.all=lsGet();derive();render();toast('Reset to the published data.')}
 function dataFile(){return'[\n'+S.all.slice().sort(function(a,b){return a.brand<b.brand?-1:a.brand>b.brand?1:byId(a,b)}).map(function(w){return JSON.stringify(w)}).join(',\n')+'\n]\n'}
 document.addEventListener('click',function(e){if(!e.target)return;
   if(e.target.id==='btnReset')resetLocal();
   if(e.target.id==='btnDlData'){saveBlob(new Blob([dataFile()],{type:'application/json'}),'weeks.json');toast('Saved weeks.json. Replace data/weeks.json in the repo and commit.')}});
-fetch('data/weeks.json',{cache:'no-cache'}).then(function(r){return r.ok?r.json():[]}).then(function(a){if(Array.isArray(a))SEED=a.map(norm)}).catch(function(){}).then(start);
+fetch('data/weeks.json?v='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.json():null}).then(function(a){if(Array.isArray(a)){SEED=a.map(norm);PUB.ok=true;PUB.n=SEED.length;var bs={};SEED.forEach(function(w){bs[w.brand]=1});PUB.b=Object.keys(bs).length}}).catch(function(){}).then(start);
 })();
 </script>
 </body></html>
