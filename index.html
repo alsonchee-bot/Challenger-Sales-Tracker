@@ -110,6 +110,12 @@ td.desc{white-space:normal;min-width:220px;max-width:340px}
 .hv{text-align:right;font-variant-numeric:tabular-nums;font-size:12.5px}
 @media (max-width:820px){.cgrid{grid-template-columns:minmax(0,1fr)}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.two{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:420px){.kpi .v{font-size:25px}}
+.exov{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;display:flex;align-items:center;justify-content:center;padding:16px}.exov[hidden]{display:none}
+.exbox{background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:10px;width:min(560px,100%);max-height:90vh;display:flex;flex-direction:column}
+.exhd,.exft{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;gap:12px}.exhd{border-bottom:1px solid var(--line)}.exft{border-top:1px solid var(--line)}
+.exbd{padding:12px 16px;overflow:auto}.exsec{margin-bottom:16px}.exlab{font-weight:600;margin-bottom:6px}
+.exgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:4px 12px;margin-top:6px}.exchk{display:flex;gap:6px;align-items:center;cursor:pointer}.exchk.all{font-weight:500}.exchk.dim{opacity:.55}
+.exrange{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px}.exrange select{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:6px;padding:5px 8px}.exsum{color:var(--ink-3);font-size:13px}
 </style></head><body>
 
 <div class="wrap">
@@ -122,7 +128,7 @@ td.desc{white-space:normal;min-width:220px;max-width:340px}
       <span class="badge" id="storeBadge" hidden></span>
       <input type="file" id="file" accept=".xlsx,.xls" multiple hidden>
       <button class="btn primary" id="btnImport">Import weekly file</button>
-      <button class="btn" id="btnExport">Export all data</button>
+      <button class="btn" id="btnExport">Export data</button>
     </div>
   </div>
 
@@ -640,18 +646,19 @@ function bindDrop(el){
 }
 
 /* ---------- export ---------- */
-function buildWorkbook(){
-  var wb=XLSX.utils.book_new(),bl=brands(),keys=[];
-  S.all.forEach(function(w){if(keys.indexOf(w.id)<0)keys.push(w.id)});keys.sort();
+function buildWorkbook(list){
+  var wb=XLSX.utils.book_new(),bl=[],keys=[];
+  list.forEach(function(w){if(bl.indexOf(w.brand)<0)bl.push(w.brand)});bl.sort();
+  list.forEach(function(w){if(keys.indexOf(w.id)<0)keys.push(w.id)});keys.sort();
   var lab=function(k){return k.replace('-W',' Wk ')};
-  var byBrand=function(b){return S.all.filter(function(x){return x.brand===b})};
+  var byBrand=function(b){return list.filter(function(x){return x.brand===b})};
   var long=[['Brand','Year','Week','Outlet','Item ID','Item Desc','SOH','Sell-Thru']];
   bl.forEach(function(b){byBrand(b).forEach(function(w){var O=w.outlets.length;for(var s=0;s<w.skuIds.length;s++)for(var o=0;o<O;o++)long.push([b,w.year,w.week,w.outlets[o],w.skuIds[s],w.skuDescs[s],w.soh[s*O+o]||0,w.st[s*O+o]||0])})});
   var wsd=XLSX.utils.aoa_to_sheet(long);wsd['!cols']=[{wch:14},{wch:6},{wch:6},{wch:8},{wch:16},{wch:58},{wch:8},{wch:10}];wsd['!autofilter']={ref:'A1:H'+long.length};
   var sum=[['Brand','Year','Week','SOH','Sell-Thru','Sell-Thru rate','Weeks of cover']];
   var addSum=function(name,list){withWeeks(list,function(){list.forEach(function(w){var t=totals(w,null),c=cover(w.id,null);sum.push([name,w.year,w.week,t.soh,t.st,t.rate==null?null:+t.rate.toFixed(4),c==null?null:+c.toFixed(2)])})})};
   bl.forEach(function(b){addSum(b,byBrand(b))});
-  if(bl.length>1){var g={};S.all.forEach(function(w){(g[w.id]=g[w.id]||[]).push(w)});addSum('All brands',keys.map(function(k){return mergeWeeks(g[k])}))}
+  if(bl.length>1){var g={};list.forEach(function(w){(g[w.id]=g[w.id]||[]).push(w)});addSum('All brands',keys.map(function(k){return mergeWeeks(g[k])}))}
   var wss=XLSX.utils.aoa_to_sheet(sum);wss['!cols']=[{wch:14},{wch:6},{wch:6},{wch:8},{wch:10},{wch:14},{wch:14}];
   var oh=['Brand','Outlet'];keys.forEach(function(k){oh.push(lab(k)+' SOH',lab(k)+' Sell-Thru')});
   var ob=[oh],kh=['Brand','Item ID','Item Desc'];keys.forEach(function(k){kh.push(lab(k)+' SOH',lab(k)+' Sell-Thru')});var kb=[kh];
@@ -664,12 +671,57 @@ function buildWorkbook(){
   XLSX.utils.book_append_sheet(wb,wsd,'All data');XLSX.utils.book_append_sheet(wb,wss,'Weekly totals');XLSX.utils.book_append_sheet(wb,wso,'By outlet');XLSX.utils.book_append_sheet(wb,wsk,'By SKU');
   return wb
 }
-function doExport(){
-  var wb=buildWorkbook(),buf=XLSX.write(wb,{type:'array',bookType:'xlsx'});
-  var first=S.all[0],last=S.all[S.all.length-1];
-  var name='Murano_SellThru_SOH_'+first.year+'Wk'+first.week+'-'+last.year+'Wk'+last.week+'.xlsx';
-  saveBlob(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),name);toast('Exported '+name)
+var EX={brands:{},weeks:{}};
+function exWeeksAvail(){var seen={},out=[];S.all.forEach(function(w){if(EX.brands[w.brand]&&!seen[w.id]){seen[w.id]=1;out.push(w)}});out.sort(function(a,b){return a.id<b.id?-1:1});return out}
+function exList(){return S.all.filter(function(w){return EX.brands[w.brand]&&EX.weeks[w.id]})}
+function openExport(){
+  var bl=brands();EX.brands={};EX.weeks={};bl.forEach(function(b){EX.brands[b]=true});S.all.forEach(function(w){EX.weeks[w.id]=true});
+  var d=$('#exDlg');if(!d){d=document.createElement('div');d.id='exDlg';d.className='exov';document.body.appendChild(d)}
+  d.hidden=false;drawExport()
 }
+function closeExport(){var d=$('#exDlg');if(d)d.hidden=true}
+function drawExport(){
+  var d=$('#exDlg'),bl=brands(),av=exWeeksAvail(),keys=[];S.all.forEach(function(w){if(keys.indexOf(w.id)<0)keys.push(w.id)});keys.sort();
+  var lab=function(k){return k.replace('-W',' Wk ')};
+  var allB=bl.every(function(b){return EX.brands[b]}),allW=keys.every(function(k){return EX.weeks[k]});
+  var availIds={};av.forEach(function(w){availIds[w.id]=1});
+  var lst=exList(),nb={},nw={};lst.forEach(function(w){nb[w.brand]=1;nw[w.id]=1});
+  var h='<div class="exbox" role="dialog" aria-label="Export data"><div class="exhd"><b>Export data</b><button class="btn sm" id="exX" type="button">Close</button></div><div class="exbd">';
+  h+='<div class="exsec"><div class="exlab">Brands</div><label class="exchk all"><input type="checkbox" id="exAllB"'+(allB?' checked':'')+'> All brands</label><div class="exgrid">';
+  bl.forEach(function(b){h+='<label class="exchk"><input type="checkbox" data-exb="'+b.replace(/"/g,'&quot;')+'"'+(EX.brands[b]?' checked':'')+'> '+b.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</label>'});
+  h+='</div></div><div class="exsec"><div class="exlab">Dates (weeks)</div><label class="exchk all"><input type="checkbox" id="exAllW"'+(allW?' checked':'')+'> All dates</label>';
+  h+='<div class="exrange"><span>From</span><select id="exFrom">'+keys.map(function(k){return'<option value="'+k+'">'+lab(k)+'</option>'}).join('')+'</select><span>to</span><select id="exTo">'+keys.map(function(k,i){return'<option value="'+k+'"'+(i===keys.length-1?' selected':'')+'>'+lab(k)+'</option>'}).join('')+'</select><button class="btn sm" id="exApplyR" type="button">Select range</button></div>';
+  h+='<div class="exgrid">';
+  keys.forEach(function(k){var on=availIds[k];h+='<label class="exchk'+(on?'':' dim')+'"><input type="checkbox" data-exw="'+k+'"'+(EX.weeks[k]?' checked':'')+'> '+lab(k)+'</label>'});
+  h+='</div></div></div><div class="exft"><span class="exsum">'+(lst.length?Object.keys(nb).length+' brand'+(Object.keys(nb).length===1?'':'s')+' · '+Object.keys(nw).length+' week'+(Object.keys(nw).length===1?'':'s')+' · '+lst.length+' brand-week'+(lst.length===1?'':'s'):'Nothing selected')+'</span><button class="btn primary" id="exGo" type="button"'+(lst.length?'':' disabled')+'>Export to Excel</button></div></div>';
+  var sc=d.querySelector('.exbd');var top=sc?sc.scrollTop:0;
+  d.innerHTML=h;var sc2=d.querySelector('.exbd');if(sc2)sc2.scrollTop=top
+}
+function runExport(){
+  var lst=exList();if(!lst.length)return;
+  var bs=[],ks=[];lst.forEach(function(w){if(bs.indexOf(w.brand)<0)bs.push(w.brand);if(ks.indexOf(w.id)<0)ks.push(w.id)});bs.sort();ks.sort();
+  var allB=brands().length===bs.length;
+  var bn=allB?'AllBrands':(bs.length<=2?bs.join('-'):bs.length+'Brands');
+  var rng=ks.length===1?ks[0].replace('-W','Wk'):ks[0].replace('-W','Wk')+'_to_'+ks[ks.length-1].replace('-W','Wk');
+  var name='Murano_SellThru_SOH_'+bn.replace(/[^A-Za-z0-9_-]+/g,'')+'_'+rng+'.xlsx';
+  var buf=XLSX.write(buildWorkbook(lst),{type:'array',bookType:'xlsx'});
+  deliver(buf,name);closeExport()
+}
+document.addEventListener('click',function(e){var t=e.target;if(!t)return;
+  if(t.id==='exX'||(t.id==='exDlg'))closeExport();
+  if(t.id==='exGo')runExport();
+  if(t.id==='exApplyR'){var f=$('#exFrom').value,to=$('#exTo').value;if(f>to){var x=f;f=to;to=x}
+    var ks=[];S.all.forEach(function(w){if(ks.indexOf(w.id)<0)ks.push(w.id)});EX.weeks={};ks.forEach(function(k){if(k>=f&&k<=to)EX.weeks[k]=true});drawExport()}
+});
+document.addEventListener('change',function(e){var t=e.target;if(!t)return;
+  if(t.id==='exAllB'){EX.brands={};if(t.checked)brands().forEach(function(b){EX.brands[b]=true});drawExport()}
+  else if(t.id==='exAllW'){EX.weeks={};if(t.checked)S.all.forEach(function(w){EX.weeks[w.id]=true});drawExport()}
+  else if(t.getAttribute&&t.getAttribute('data-exb')!=null){EX.brands[t.getAttribute('data-exb')]=t.checked;drawExport()}
+  else if(t.getAttribute&&t.getAttribute('data-exw')!=null){EX.weeks[t.getAttribute('data-exw')]=t.checked;drawExport()}
+});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeExport()});
+function doExport(){openExport()}
+function deliver(buf,name){saveBlob(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),name);toast('Exported '+name)}
 function saveBlob(blob,name){var u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u)},4000)}
 
 /* ---------- boot ---------- */
