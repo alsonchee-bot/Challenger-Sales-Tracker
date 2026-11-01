@@ -1,32 +1,37 @@
-# PanzerGlass Sell-Thru Tracker
+# Murano Sell-Thru Tracker
 
-Static site. No build step, no dependencies.
+Weekly sell-thru and stock on hand (SOH) by brand, outlet and SKU. Static site, no build step.
 
-    index.html        the dashboard (Excel reader included, works offline)
-    data/weeks.json   the weeks everyone sees when they open the site
-    vercel.json       headers and clean URLs
+    index.html                 the dashboard
+    vendor/xlsx.full.min.js    Excel reader (SheetJS 0.18.5), served from this repo
+    data/weeks.json            published data: one line per brand and week
+    vercel.json                headers
 
-## Deploy
+Brands in data/weeks.json today: PANZERGLASS, PITAKA.
 
-Vercel dashboard: Add New, Project, import this folder (or its Git repo). Framework preset: Other.
-Leave Build Command and Output Directory empty.
+## Deploy (GitHub + Vercel)
 
-CLI:
+1. Create a GitHub repository and push these files to the root (main branch).
+2. In Vercel: Add New, Project, import the repository.
+3. Framework Preset: Other. Leave Build Command and Output Directory empty. Deploy.
 
-    npm i -g vercel
-    vercel --prod
+Every push to main redeploys the site.
 
-## Weekly update
+## Weekly update (any brand)
 
-1. Open the live site and import the new weekly Excel file.
-2. In "Loaded weeks" click Download data file. This saves weeks.json with every loaded week.
-3. Replace data/weeks.json with that file and redeploy (git push, or `vercel --prod`).
+1. Open the live site and import the new weekly Excel file. The brand is read from the file
+   ("Brand Name" on the Information sheet) and can be corrected in the import preview.
+2. In the Loaded weeks section click Download data file. It saves weeks.json with every brand and week.
+3. Replace data/weeks.json in the repository with that file and commit.
+   On github.com: open data/weeks.json, click the pencil, paste the new contents, Commit changes.
+4. Vercel redeploys on its own, usually within a minute.
 
-Visitors who import files only change their own browser. Their changes are kept locally;
-"Reset to published data" returns them to what is in weeks.json.
+Importing a week that already exists for a brand replaces it. Visitors who import files only change
+their own browser; Reset to published data returns them to what is in data/weeks.json.
 
 ## Notes
 
-- The data is public to anyone with the URL. For private access use Vercel Deployment Protection
-  (password or SSO, on paid plans).
-- The data file is read with a no-cache request, so a redeploy shows new weeks right away.
+- Sell-thru rate = units sold / (units sold + on hand). Weeks of cover = on hand / average weekly
+  sell-thru over the last four weeks.
+- The data is public to anyone with the site URL. For private access use Vercel Deployment Protection
+  (password or SSO, on paid plans), and keep the GitHub repository private.
