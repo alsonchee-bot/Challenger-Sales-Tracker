@@ -186,7 +186,7 @@ th{font-weight:600}
       <span class="badge" id="storeBadge" hidden></span>
       <input type="file" id="file" accept=".xlsx,.xls" multiple hidden>
       <button class="btn primary" id="btnImport">Import weekly file</button>
-      <button class="btn" id="btnAuth" type="button">Sign in</button>
+      <button class="btn" id="btnAuth" type="button">Editor login</button>
       <button class="btn" id="btnExport">Export data</button>
     </div>
   </div>
@@ -249,7 +249,7 @@ function lsGet(){return S.all}
 function lsSet(){}
 function saveWeek(w){
   norm(w);w.brand=String(w.brand).trim().toUpperCase();w.source=w.source||'import';
-  return sb.rpc('save_week',{w:w},true).then(function(){
+  return sb.rpc('save_week',{w:w},false).then(function(){
     var i=S.all.findIndex(function(x){return wkey(x)===wkey(w)});if(i>=0)S.all[i]=w;else S.all.push(w);derive()})
 }
 function removeWeek(k){
@@ -336,7 +336,7 @@ function render(){
   if(!S.loaded){m.innerHTML='<div class="panel"><div class="empty">Loading saved weeks…</div></div>';return}
   if(!S.all.length){
     m.innerHTML='<div class="panel"><div class="body"><div class="drop" id="drop"><div style="font-size:16px;font-weight:600;color:var(--ink)">No weeks loaded yet</div><p>Import the weekly “Sell-Thru &amp; SOH” Excel file from Murano. Each file adds one week for one brand. You can select several files at once.</p><button class="btn primary" id="emptyImport">Choose Excel file</button></div></div></div>';
-    $('#emptyImport').onclick=function(){sb.needAuth(function(){$('#file').click()},'Sign in to import weekly files.')};bindDrop($('#drop'));return
+    $('#emptyImport').onclick=function(){$('#file').click()};bindDrop($('#drop'));return
   }
   var w=W(S.sel)||S.weeks[S.weeks.length-1];S.sel=w.id;if(S.outlet&&w.outlets.indexOf(S.outlet)<0)S.outlet=null;
   var idx=S.weeks.indexOf(w),prev=idx>0?S.weeks[idx-1]:null;
@@ -656,7 +656,6 @@ function parseWorkbook(wb,fname){
 }
 function handleFiles(files){
   files=Array.prototype.slice.call(files);if(!files.length)return;
-  if(!sb.signedIn()){sb.openAuth('Sign in to import weekly files.');return}
   if(typeof XLSX==='undefined'){toast('The Excel reader (xlsx.full.min.js) did not load. Make sure that file is in the repo root next to index.html.');return}
   var done=[],pending=files.length;
   files.forEach(function(f,i){
@@ -791,7 +790,7 @@ function deliver(buf,name){saveBlob(new Blob([buf],{type:'application/vnd.openxm
 function saveBlob(blob,name){var u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u)},4000)}
 
 /* ---------- boot ---------- */
-$('#btnImport').onclick=function(){sb.needAuth(function(){$('#file').click()},'Sign in to import weekly files.')};
+$('#btnImport').onclick=function(){$('#file').click()};
 $('#file').onchange=function(e){handleFiles(e.target.files);e.target.value=''};
 $('#btnExport').onclick=doExport;
 $('#impCancel').onclick=function(){S.staged=[];$('#importPanel').hidden=true};
@@ -805,7 +804,7 @@ var sb=(function(){
   var AUTH=null,after=null;
   try{AUTH=JSON.parse(localStorage.getItem('sb-auth')||'null')}catch(e){}
   function save(a){AUTH=a;try{if(a)localStorage.setItem('sb-auth',JSON.stringify(a));else localStorage.removeItem('sb-auth')}catch(e){}paint()}
-  function paint(){var b=$('#btnAuth');if(b){b.textContent=AUTH?'Sign out':'Sign in';b.title=AUTH?('Signed in as '+AUTH.email):'Sign in to import or delete data'}}
+  function paint(){var b=$('#btnAuth');if(b){b.textContent=AUTH?'Sign out':'Editor login';b.title=AUTH?('Signed in as '+AUTH.email):'Editors sign in to delete weeks'}}
   function msg(r,j){return(j&&(j.message||j.msg||j.error_description||j.error))||('Request failed ('+r.status+')')}
   function post(path,body,token){
     return fetch(SB_URL+path,{method:'POST',headers:{'apikey':SB_KEY,'Content-Type':'application/json','Authorization':'Bearer '+(token||SB_KEY)},body:JSON.stringify(body)})
@@ -821,14 +820,14 @@ var sb=(function(){
     signedIn:function(){return!!AUTH},
     rpc:function(name,args,needAuth){
       return token().then(function(t){
-        if(needAuth&&!t){api.openAuth('Sign in to change data.');throw new Error('Sign in required')}
+        if(needAuth&&!t){api.openAuth('Sign in as an editor to delete weeks.');throw new Error('Sign in required')}
         return post('/rest/v1/rpc/'+name,args||{},needAuth?t:null)
       }).catch(function(e){if(e&&(e.status===401||e.status===403||/row-level security|permission denied/i.test(e.message||'')))e.message='Your login is not allowed to change data. Ask the admin to add your email as an editor.';throw e})
     },
     openAuth:function(note){
       var d=$('#authDlg');if(!d){d=document.createElement('div');d.id='authDlg';d.className='exov';document.body.appendChild(d)}
       d.hidden=false;
-      d.innerHTML='<div class="exbox" role="dialog" aria-label="Sign in" style="width:min(400px,100%)"><div class="exhd"><b>Sign in</b><button class="btn sm" id="auX" type="button">Close</button></div><form class="exbd" id="auForm"><div class="sub" style="margin-bottom:10px">'+(note||'Editors sign in to import or delete data. Viewing needs no login.')+'</div><label class="exlab" for="auEmail">Email</label><input id="auEmail" type="email" required autocomplete="username" style="width:100%;margin-bottom:10px;padding:8px;border:1px solid var(--line);border-radius:4px;background:var(--surface);color:var(--ink)"><label class="exlab" for="auPass">Password</label><input id="auPass" type="password" required autocomplete="current-password" style="width:100%;padding:8px;border:1px solid var(--line);border-radius:4px;background:var(--surface);color:var(--ink)"><div id="auErr" role="alert" style="color:var(--crit);margin-top:10px;min-height:18px"></div><div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="btn primary" id="auGo" type="submit">Sign in</button></div></form></div>';
+      d.innerHTML='<div class="exbox" role="dialog" aria-label="Sign in" style="width:min(400px,100%)"><div class="exhd"><b>Sign in</b><button class="btn sm" id="auX" type="button">Close</button></div><form class="exbd" id="auForm"><div class="sub" style="margin-bottom:10px">'+(note||'Only needed to delete weeks. Viewing and importing need no login.')+'</div><label class="exlab" for="auEmail">Email</label><input id="auEmail" type="email" required autocomplete="username" style="width:100%;margin-bottom:10px;padding:8px;border:1px solid var(--line);border-radius:4px;background:var(--surface);color:var(--ink)"><label class="exlab" for="auPass">Password</label><input id="auPass" type="password" required autocomplete="current-password" style="width:100%;padding:8px;border:1px solid var(--line);border-radius:4px;background:var(--surface);color:var(--ink)"><div id="auErr" role="alert" style="color:var(--crit);margin-top:10px;min-height:18px"></div><div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="btn primary" id="auGo" type="submit">Sign in</button></div></form></div>';
       setTimeout(function(){var e=$('#auEmail');if(e)e.focus()},30)
     },
     closeAuth:function(){var d=$('#authDlg');if(d)d.hidden=true},
