@@ -123,10 +123,10 @@ td.desc{white-space:normal;min-width:220px;max-width:340px}
 .side select{width:100%}
 .side .seg{display:flex;width:100%;margin:0 !important}.side .seg button{flex:1}
 .brandlist{display:flex;flex-direction:column;gap:4px}
-.bl{display:flex;align-items:center;gap:10px;border:1px solid transparent;background:transparent;border-radius:6px;padding:6px 8px;text-align:left;font-weight:500}
-.bl:hover{background:var(--surface-2)}.bl.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
-.blogo{width:92px;height:40px;padding:4px 6px;box-sizing:border-box;border-radius:6px;background:#fff;border:1px solid var(--line-soft);display:grid;place-items:center;overflow:hidden;flex:none}
-.blogo img{max-width:100%;max-height:100%;object-fit:contain;display:block}
+.bl{display:flex;align-items:center;gap:10px;min-height:56px;border:1px solid transparent;background:transparent;border-radius:6px;padding:6px 8px;text-align:left;font-weight:500}
+.bl:hover{background:var(--surface-2)}.bl:has(.bname) .blogo{width:40px;flex:none}.bl.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.blogo{width:100%;height:48px;flex:1 1 auto;padding:4px 6px;box-sizing:border-box;border-radius:6px;background:#fff;border:1px solid var(--line-soft);display:grid;place-items:center;overflow:hidden;flex:none}
+.blogo img{max-width:100%;max-height:38px;width:auto;height:auto;display:block}.bl.on .blogo{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
 .wm{width:100%;height:100%;display:grid;place-items:center;font-weight:700;font-size:13px;letter-spacing:.02em;color:#fff;background:var(--s1)}
 .wm.all{background:var(--surface-2);color:var(--ink-2)}.wm.c1{background:var(--s2)}.wm.c2{background:var(--s3)}.wm.c3{background:var(--s4)}.wm.c4{background:var(--s5)}
 .bname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -475,7 +475,7 @@ function wmFix(){
 function sideHtml(w){
   var bl=brands(),items=[];if(bl.length>1)items.push(['ALL','All brands']);bl.forEach(function(b){items.push([b,b])});
   var s='<div class="sd-sec"><div class="sd-lab">View</div>'+tabs()+'</div>';
-  s+='<div class="sd-sec"><div class="sd-lab">Brand</div><div class="brandlist" role="group" aria-label="Brand">'+items.map(function(it,i){return'<button type="button" class="bl'+(S.brand===it[0]?' on':'')+'" data-brand="'+esc(it[0])+'" aria-pressed="'+(S.brand===it[0])+'"><span class="blogo">'+logoHtml(it[0],i)+'</span><span class="bname">'+esc(it[1])+'</span></button>'}).join('')+'</div></div>';
+  s+='<div class="sd-sec"><div class="sd-lab">Brand</div><div class="brandlist" role="group" aria-label="Brand">'+items.map(function(it,i){return'<button type="button" class="bl'+(S.brand===it[0]?' on':'')+'" title="'+esc(it[1])+'" aria-label="'+esc(it[1])+'" data-brand="'+esc(it[0])+'" aria-pressed="'+(S.brand===it[0])+'"><span class="blogo">'+logoHtml(it[0],i)+'</span>'+(it[0]==='ALL'?'<span class="bname">'+esc(it[1])+'</span>':'')+'</button>'}).join('')+'</div></div>';
   s+='<div class="sd-sec"><div class="sd-lab"><label for="selWeek">Week</label></div><select id="selWeek">'+S.weeks.slice().reverse().map(function(x){return'<option value="'+esc(x.id)+'"'+(x.id===S.sel?' selected':'')+'>'+x.year+' · Wk '+x.week+'</option>'}).join('')+'</select></div>';
   s+='<div class="sd-sec"><div class="sd-lab"><label for="selOutlet">Outlet</label></div><select id="selOutlet"><option value="">All '+w.outlets.length+' outlets</option>'+w.outlets.map(function(o){return'<option'+(o===S.outlet?' selected':'')+'>'+esc(o)+'</option>'}).join('')+'</select>';
   if(S.outlet)s+='<div style="margin-top:8px"><span class="chip">Outlet '+esc(S.outlet)+'<button id="clrOutlet" aria-label="Show all outlets">×</button></span></div>';
