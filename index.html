@@ -197,7 +197,6 @@ th{font-weight:600}
       <span class="badge" id="storeBadge" hidden></span>
       <input type="file" id="file" accept=".xlsx,.xls" multiple hidden>
       <button class="btn primary" id="btnImport">Import weekly file</button>
-      <button class="btn" id="btnAuth" type="button">Editor login</button>
       <button class="btn" id="btnExport">Export data</button>
     </div>
   </div>
@@ -367,7 +366,7 @@ function render(){
   if(V==='outlets')h+='<section class="panel"><header><h2>Outlets</h2><span class="sub">'+esc(wlabel(w))+' · click a row to focus on one outlet</span></header><div class="body tbl" style="max-height:560px;overflow:auto" id="outTbl"></div></section>';
   if(V==='grid')h+='<section class="panel"><header><h2>Outlet × SKU grid</h2><div class="seg" role="group" aria-label="Metric"><button data-heat="soh" aria-pressed="'+(S.heat==='soh')+'">Stock on hand</button><button data-heat="st" aria-pressed="'+(S.heat==='st')+'">Sell-thru</button></div></header><div class="body"><div class="heat" id="heat"></div><div class="legend" style="margin-top:10px" id="heatLegend"></div></div></section>';
   if(V==='skus')h+='<section class="panel"><header><h2>SKUs</h2><span class="sub">'+esc(wlabel(w))+(S.outlet?' · '+esc(S.outlet):' · all outlets')+'</span></header><div class="body tbl" id="skuTbl"></div></section>';
-  if(V==='weeks')h+='<section class="panel"><header><h2>Loaded weeks</h2><span class="sub">Importing a week that already exists replaces it. Changes are saved to the shared database.</span></header><div class="body tbl" id="wkTbl"></div></section>';
+  if(V==='weeks')h+='<section class="panel"><header><h2>Loaded weeks</h2><span class="sub">Importing a week that already exists replaces it.</span></header><div class="body tbl" id="wkTbl"></div></section>';
   m.innerHTML=shell(side,h);
   bindBar();
   /* charts */
@@ -434,9 +433,9 @@ function skuTable(w){
 }
 function weekTable(){
   var multi=brands().length>1;
-  var h='<table><thead><tr><th>Week</th>'+(multi?'<th style="text-align:left">Brand</th>':'')+'<th>Report run</th><th>Outlets</th><th>SKUs</th><th>On hand</th><th>Sold</th><th></th></tr></thead><tbody>';
+  var h='<table><thead><tr><th>Week</th>'+(multi?'<th style="text-align:left">Brand</th>':'')+'<th>Report run</th><th>Outlets</th><th>SKUs</th><th>On hand</th><th>Sold</th></tr></thead><tbody>';
   S.all.slice().sort(function(a,b){return byId(b,a)}).forEach(function(w){var t=totals(w,null),k=wkey(w),c=S.confirmDel===k;
-    h+='<tr><td><b>'+w.year+' · Wk '+w.week+'</b></td>'+(multi?'<td style="text-align:left">'+esc(w.brand)+'</td>':'')+'<td>'+esc((w.executed||'').replace(/\s*\(.*\)/,''))+'</td><td>'+w.outlets.length+'</td><td>'+w.skuIds.length+'</td><td>'+fmt(t.soh)+'</td><td>'+fmt(t.st)+'</td><td>'+(c?'<button class="btn sm danger" data-del="'+esc(k)+'">Confirm remove</button> <button class="btn sm" data-del-cancel="1">Keep</button>':'<button class="btn sm" data-ask="'+esc(k)+'">Remove</button>')+'</td></tr>'});
+    h+='<tr><td><b>'+w.year+' · Wk '+w.week+'</b></td>'+(multi?'<td style="text-align:left">'+esc(w.brand)+'</td>':'')+'<td>'+esc((w.executed||'').replace(/\s*\(.*\)/,''))+'</td><td>'+w.outlets.length+'</td><td>'+w.skuIds.length+'</td><td>'+fmt(t.soh)+'</td><td>'+fmt(t.st)+'</td><td>'+'</td></tr>'});
   var el=$('#wkTbl');el.innerHTML=h+'</tbody></table>';
   el.querySelectorAll('[data-ask]').forEach(function(b){b.onclick=function(){S.confirmDel=b.getAttribute('data-ask');weekTable()}});
   el.querySelectorAll('[data-del-cancel]').forEach(function(b){b.onclick=function(){S.confirmDel=null;weekTable()}});
