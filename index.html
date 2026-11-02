@@ -173,6 +173,17 @@ th{font-weight:600}
 .bl.on{background:#e1f0fb;border-color:#0a6fc2;color:#0a6fc2}.bl{border-radius:4px}
 
 .exbox{border-radius:4px}.exhd b{font-size:20px}
+.sd-row{display:grid;grid-template-columns:92px minmax(0,1fr);gap:12px;align-items:start}.sd-col{min-width:0}
+.sd-row .brandlist{flex-direction:column;flex-wrap:nowrap}.sd-row .bl{padding:5px 4px;min-height:54px}.sd-row .blogo{padding:3px 4px}
+.sd-row .bl:has(.bname) .bname{display:none}.sd-row .bl:has(.bname) .blogo{width:100%;flex:1 1 auto}
+.submenu{display:flex;flex-direction:column;gap:4px}
+.sm{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-height:44px;padding:8px 10px;border:1px solid transparent;background:transparent;border-radius:6px;text-align:left;font-weight:500;font-size:14px;color:var(--ink);cursor:pointer}
+.sm:hover{background:var(--surface-2)}.sm.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
+.smn{font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums}.sm.on .smn{color:var(--accent)}
+.res{scroll-margin-top:70px}
+.totop{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--ink);box-shadow:0 2px 10px rgba(0,0,0,.2);font-size:20px;line-height:1;display:grid;place-items:center;cursor:pointer;opacity:0;pointer-events:none;transform:translateY(8px);transition:opacity .2s,transform .2s;z-index:50}
+.totop.show{opacity:1;pointer-events:auto;transform:none}.totop:hover{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+@media (prefers-reduced-motion:reduce){.totop{transition:none}}
 </style></head><body><div class="nav"><span class="logo"><img src="logo-murano.png" alt="Murano"><span>Analytics</span></span><span class="org">Challenger</span>
 <a class="on">Graphs</a><a data-nav="imp">Data input</a><a data-nav="exp">Export</a><span class="sp"></span><span class="ic">?</span><span class="ic">&#8962;</span></div>
 
@@ -205,7 +216,7 @@ th{font-weight:600}
 <script>
 (function(){
 'use strict';
-var S={all:[],brand:null,wantBrand:null,view:'dash',b:{metric:'soh',group:'outlet',type:'column',top:'10',order:'desc'},weeks:[],sel:null,outlet:null,heat:'soh',sortKey:'soh',sortDir:-1,skuSort:'soh',skuDir:-1,db:null,col:null,staged:[],confirmDel:null,loaded:false};
+var S={all:[],brand:null,wantBrand:null,view:'overview',b:{metric:'soh',group:'outlet',type:'column',top:'10',order:'desc'},weeks:[],sel:null,outlet:null,heat:'soh',sortKey:'soh',sortDir:-1,skuSort:'soh',skuDir:-1,db:null,col:null,staged:[],confirmDel:null,loaded:false};
 var $=function(s){return document.querySelector(s)};
 function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function fmt(n){return n==null||isNaN(n)?'–':Math.round(n).toLocaleString('en-US')}
@@ -344,26 +355,27 @@ function render(){
   var side=sideHtml(w),h='';
   if(S.brand==='ALL'){var tb=brands().length,pw=S.weeks.filter(function(x){return x.nb<tb});if(pw.length)h+='<div class="sub" style="margin:-6px 0 14px">'+pw.map(wlabel).join(', ')+(pw.length>1?' have':' has')+' data for fewer brands, so totals and week-to-week changes in All brands are not like for like.</div>'}
   if(S.view==='charts'){m.innerHTML=shell(side,h+chartsView(w));bindBar();drawCharts(w);return}
-  h+='<div class="kpis">'+
+  var V=['overview','outlets','grid','skus','weeks'].indexOf(S.view)<0?'overview':S.view;
+  if(V==='overview')h+='<div class="kpis">'+
    kpi('Stock on hand',fmt(t&&t.soh),delta(t&&t.soh,tp&&tp.soh,null,true))+
    kpi('Sell-thru (units)',fmt(t&&t.st),delta(t&&t.st,tp&&tp.st))+
    kpi('Sell-thru rate',pct(t&&t.rate),delta(t&&t.rate,tp&&tp.rate,'pct')+'<br>units sold ÷ (sold + on hand)')+
    kpi('Weeks of cover',f1(cv),delta(cv,cvp,'dec',true)+'<br>on hand ÷ avg weekly sell-thru (last 4 wks)')+
    '</div>';
-  h+='<div class="two" style="margin-top:12px"><section class="panel"><header><h2>Stock on hand by week</h2><span class="sub">units'+(S.outlet?' · '+esc(S.outlet):' · all outlets')+'</span></header><div class="body"><div class="chart" id="chSoh"></div></div></section>'+
+  if(V==='overview')h+='<div class="two" style="margin-top:12px"><section class="panel"><header><h2>Stock on hand by week</h2><span class="sub">units'+(S.outlet?' · '+esc(S.outlet):' · all outlets')+'</span></header><div class="body"><div class="chart" id="chSoh"></div></div></section>'+
      '<section class="panel"><header><h2>Sell-thru by week</h2><span class="sub">units sold'+(S.outlet?' · '+esc(S.outlet):' · all outlets')+'</span></header><div class="body"><div class="chart" id="chSt"></div></div></section></div>';
-  h+='<section class="panel" style="margin-top:12px"><header><h2>Outlets</h2><span class="sub">'+esc(wlabel(w))+' · click a row to focus on one outlet</span></header><div class="body tbl" style="max-height:560px;overflow:auto" id="outTbl"></div></section>';
-  h+='<section class="panel" style="margin-top:12px"><header><h2>Outlet × SKU grid</h2><div class="seg" role="group" aria-label="Metric"><button data-heat="soh" aria-pressed="'+(S.heat==='soh')+'">Stock on hand</button><button data-heat="st" aria-pressed="'+(S.heat==='st')+'">Sell-thru</button></div></header><div class="body"><div class="heat" id="heat"></div><div class="legend" style="margin-top:10px" id="heatLegend"></div></div></section>';
-  h+='<section class="panel" style="margin-top:12px"><header><h2>SKUs</h2><span class="sub">'+esc(wlabel(w))+(S.outlet?' · '+esc(S.outlet):' · all outlets')+'</span></header><div class="body tbl" id="skuTbl"></div></section>';
-  h+='<section class="panel" style="margin-top:12px"><header><h2>Loaded weeks</h2><span class="sub">Importing a week that already exists replaces it. Changes are saved to the shared database.</span></header><div class="body tbl" id="wkTbl"></div></section>';
+  if(V==='outlets')h+='<section class="panel"><header><h2>Outlets</h2><span class="sub">'+esc(wlabel(w))+' · click a row to focus on one outlet</span></header><div class="body tbl" style="max-height:560px;overflow:auto" id="outTbl"></div></section>';
+  if(V==='grid')h+='<section class="panel"><header><h2>Outlet × SKU grid</h2><div class="seg" role="group" aria-label="Metric"><button data-heat="soh" aria-pressed="'+(S.heat==='soh')+'">Stock on hand</button><button data-heat="st" aria-pressed="'+(S.heat==='st')+'">Sell-thru</button></div></header><div class="body"><div class="heat" id="heat"></div><div class="legend" style="margin-top:10px" id="heatLegend"></div></div></section>';
+  if(V==='skus')h+='<section class="panel"><header><h2>SKUs</h2><span class="sub">'+esc(wlabel(w))+(S.outlet?' · '+esc(S.outlet):' · all outlets')+'</span></header><div class="body tbl" id="skuTbl"></div></section>';
+  if(V==='weeks')h+='<section class="panel"><header><h2>Loaded weeks</h2><span class="sub">Importing a week that already exists replaces it. Changes are saved to the shared database.</span></header><div class="body tbl" id="wkTbl"></div></section>';
   m.innerHTML=shell(side,h);
   bindBar();
   /* charts */
   var ser=S.weeks.map(function(x){return totals(x,S.outlet)||{soh:0,st:0}});
   var lab=S.weeks.map(wlabel),ids=S.weeks.map(function(x){return x.id});
-  chart($('#chSoh'),{kind:'line',title:'Stock on hand by week',name:'SOH',labels:lab,ids:ids,values:ser.map(function(x){return x.soh}),color:'var(--s1)',selIdx:idx});
-  chart($('#chSt'),{kind:'bar',title:'Sell-thru by week',name:'Sold',labels:lab,ids:ids,values:ser.map(function(x){return x.st}),color:'var(--s2)',selIdx:idx,extra:ser.map(function(x){return' · rate '+pct(x.rate==null?(x.soh+x.st?x.st/(x.soh+x.st):null):x.rate)})});
-  outletTable(w);heatmap(w);skuTable(w);weekTable();
+  if(V==='overview')chart($('#chSoh'),{kind:'line',title:'Stock on hand by week',name:'SOH',labels:lab,ids:ids,values:ser.map(function(x){return x.soh}),color:'var(--s1)',selIdx:idx});
+  if(V==='overview')chart($('#chSt'),{kind:'bar',title:'Sell-thru by week',name:'Sold',labels:lab,ids:ids,values:ser.map(function(x){return x.st}),color:'var(--s2)',selIdx:idx,extra:ser.map(function(x){return' · rate '+pct(x.rate==null?(x.soh+x.st?x.st/(x.soh+x.st):null):x.rate)})});
+  if(V==='outlets')outletTable(w);if(V==='grid')heatmap(w);if(V==='skus')skuTable(w);if(V==='weeks')weekTable();
   document.querySelectorAll('[data-heat]').forEach(function(b){b.onclick=function(){S.heat=b.getAttribute('data-heat');render()}});
 }
 function kpi(l,v,d){return'<div class="kpi"><div class="l">'+l+'</div><div class="v">'+v+'</div><div class="d">'+d+'</div></div>'}
@@ -462,15 +474,20 @@ function wmFix(){
 }
 function sideHtml(w){
   var bl=brands(),items=[];if(bl.length>1)items.push(['ALL','All brands']);bl.forEach(function(b){items.push([b,b])});
-  var s='<div class="sd-sec"><div class="sd-lab">View</div>'+tabs()+'</div>';
-  s+='<div class="sd-sec"><div class="sd-lab">Brand</div><div class="brandlist" role="group" aria-label="Brand">'+items.map(function(it,i){return'<button type="button" class="bl'+(S.brand===it[0]?' on':'')+'" title="'+esc(it[1])+'" aria-label="'+esc(it[1])+'" data-brand="'+esc(it[0])+'" aria-pressed="'+(S.brand===it[0])+'"><span class="blogo">'+logoHtml(it[0],i)+'</span>'+(it[0]==='ALL'?'<span class="bname">'+esc(it[1])+'</span>':'')+'</button>'}).join('')+'</div></div>';
+  var s='';
+  var bh='<div class="sd-lab">Brand</div><div class="brandlist" role="group" aria-label="Brand">'+items.map(function(it,i){return'<button type="button" class="bl'+(S.brand===it[0]?' on':'')+'" title="'+esc(it[1])+'" aria-label="'+esc(it[1])+'" data-brand="'+esc(it[0])+'" aria-pressed="'+(S.brand===it[0])+'"><span class="blogo">'+logoHtml(it[0],i)+'</span>'+(it[0]==='ALL'?'<span class="bname">'+esc(it[1])+'</span>':'')+'</button>'}).join('')+'</div>';
+  s+='<div class="sd-sec"><div class="sd-row"><div class="sd-col">'+bh+'</div><div class="sd-col"><div class="sd-lab">Data</div>'+submenu(w)+'</div></div></div>';
   s+='<div class="sd-sec"><div class="sd-lab"><label for="selWeek">Week</label></div><select id="selWeek">'+S.weeks.slice().reverse().map(function(x){return'<option value="'+esc(x.id)+'"'+(x.id===S.sel?' selected':'')+'>'+x.year+' · Wk '+x.week+'</option>'}).join('')+'</select></div>';
   s+='<div class="sd-sec"><div class="sd-lab"><label for="selOutlet">Outlet</label></div><select id="selOutlet"><option value="">All '+w.outlets.length+' outlets</option>'+w.outlets.map(function(o){return'<option'+(o===S.outlet?' selected':'')+'>'+esc(o)+'</option>'}).join('')+'</select>';
   if(S.outlet)s+='<div style="margin-top:8px"><span class="chip">Outlet '+esc(S.outlet)+'<button id="clrOutlet" aria-label="Show all outlets">×</button></span></div>';
   s+='</div><div class="sub sd-note">Report run '+esc((w.executed||'').replace(/\s*\(.*\)/,''))+'</div>';
   return s
 }
-function tabs(){return'<div class="seg" style="margin-bottom:14px" role="group" aria-label="View"><button data-view="dash" aria-pressed="'+(S.view==='dash')+'">Dashboard</button><button data-view="charts" aria-pressed="'+(S.view==='charts')+'">Charts</button></div>'}
+function submenu(w){
+  var V=S.view,items=[['overview','Overview','KPIs, weekly trend'],['outlets','Outlets',w.outlets.length],['grid','Outlet × SKU grid',''],['skus','SKUs',w.skuIds.length],['charts','Charts',''],['weeks','Loaded weeks',S.weeks.length]];
+  return'<nav class="submenu" aria-label="Data to view">'+items.map(function(it){var on=(V===it[0])||(it[0]==='overview'&&['overview','outlets','grid','skus','charts','weeks'].indexOf(V)<0);
+    return'<button type="button" class="sm'+(on?' on':'')+'" data-sec="'+it[0]+'" aria-pressed="'+on+'"><span class="smt">'+it[1]+'</span>'+(typeof it[2]==='number'?'<span class="smn">'+it[2]+'</span>':'')+'</button>'}).join('')+'</nav>'
+}
 function selHtml(id,label,opts,cur){return'<div class="field"><label for="'+id+'">'+label+'</label><select id="'+id+'">'+opts.map(function(o){return'<option value="'+esc(o[0])+'"'+(String(cur)===String(o[0])?' selected':'')+'>'+esc(o[1])+'</option>'}).join('')+'</select></div>'}
 function brandField(){var bl=brands(),o=bl.map(function(b){return[b,b]});if(bl.length>1)o.unshift(['ALL','All brands']);return selHtml('selBrand','Brand',o,S.brand)}
 function wseries(metric,o){
@@ -604,7 +621,7 @@ function drawCharts(w){
   scatter($('#p13'),w.outlets.map(function(n){var a=agg(w,n,null);return{x:a.soh,y:a.st,label:n,hl:n===S.outlet}}))
 }
 function bindBar(){
-  document.querySelectorAll('[data-view]').forEach(function(b){b.onclick=function(){S.view=b.getAttribute('data-view');render()}});
+  document.querySelectorAll('[data-sec]').forEach(function(b){b.onclick=function(){S.view=b.getAttribute('data-sec');render();if(window.innerWidth<=900){var r=document.querySelector('.res');if(r)r.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth',block:'start'})}}});
   document.querySelectorAll('[data-brand]').forEach(function(b){b.onclick=function(){S.brand=b.getAttribute('data-brand');derive();render()}});
   wmFix();
   $('#selWeek').onchange=function(e){S.sel=e.target.value;render()};
@@ -870,4 +887,11 @@ document.addEventListener('click',function(e){var a=e.target.closest&&e.target.c
  if(k==='imp'){document.getElementById('btnImport').click();return}
  if(k==='exp'){document.getElementById('btnExport').click();return}
  });
+</script>
+<button type="button" class="totop" id="toTop" aria-label="Back to top" title="Back to top"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 19V6M6 11l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+<script>
+(function(){var b=document.getElementById('toTop');if(!b)return;
+function u(){b.classList.toggle('show',(window.pageYOffset||document.documentElement.scrollTop)>400)}
+window.addEventListener('scroll',u,{passive:true});u();
+b.addEventListener('click',function(){var rm=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches;window.scrollTo({top:0,behavior:rm?'auto':'smooth'})})})();
 </script></body></html>
