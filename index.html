@@ -435,7 +435,7 @@ function weekTable(){
   var multi=brands().length>1;
   var h='<table><thead><tr><th>Week</th>'+(multi?'<th style="text-align:left">Brand</th>':'')+'<th>Report run</th><th>Outlets</th><th>SKUs</th><th>On hand</th><th>Sold</th></tr></thead><tbody>';
   S.all.slice().sort(function(a,b){return byId(b,a)}).forEach(function(w){var t=totals(w,null),k=wkey(w),c=S.confirmDel===k;
-    h+='<tr><td><b>'+w.year+' · Wk '+w.week+'</b></td>'+(multi?'<td style="text-align:left">'+esc(w.brand)+'</td>':'')+'<td>'+esc((w.executed||'').replace(/\s*\(.*\)/,''))+'</td><td>'+w.outlets.length+'</td><td>'+w.skuIds.length+'</td><td>'+fmt(t.soh)+'</td><td>'+fmt(t.st)+'</td><td>'+'</td></tr>'});
+    h+='<tr><td><b>'+w.year+' · Wk '+w.week+'</b></td>'+(multi?'<td style="text-align:left">'+esc(w.brand)+'</td>':'')+'<td>'+esc((w.executed||'').replace(/\s*\(.*\)/,''))+'</td><td>'+w.outlets.length+'</td><td>'+w.skuIds.length+'</td><td>'+fmt(t.soh)+'</td><td>'+fmt(t.st)+'</td></tr>'});
   var el=$('#wkTbl');el.innerHTML=h+'</tbody></table>';
   el.querySelectorAll('[data-ask]').forEach(function(b){b.onclick=function(){S.confirmDel=b.getAttribute('data-ask');weekTable()}});
   el.querySelectorAll('[data-del-cancel]').forEach(function(b){b.onclick=function(){S.confirmDel=null;weekTable()}});
