@@ -184,6 +184,10 @@ th{font-weight:600}
 .totop{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--ink);box-shadow:0 2px 10px rgba(0,0,0,.2);font-size:20px;line-height:1;display:grid;place-items:center;cursor:pointer;opacity:0;pointer-events:none;transform:translateY(8px);transition:opacity .2s,transform .2s;z-index:50}
 .totop.show{opacity:1;pointer-events:auto;transform:none}.totop:hover{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
 @media (prefers-reduced-motion:reduce){.totop{transition:none}}
+.qbar{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:0 12px;margin-bottom:6px;color:var(--ink-3)}
+.qbar:focus-within{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.qbar input{flex:1;min-width:0;border:0;outline:0;background:transparent;color:var(--ink);font:inherit;font-size:16px;padding:12px 0}
+.qnote{min-height:18px;margin:0 2px 8px}
 </style></head><body><div class="nav"><span class="logo"><img src="logo-murano.png" alt="Murano"><span>Analytics</span></span><span class="org">Challenger</span>
 <a class="on">Graphs</a><a data-nav="imp">Data input</a><a data-nav="exp">Export</a><span class="sp"></span><span class="ic">?</span><span class="ic">&#8962;</span></div>
 
@@ -215,7 +219,7 @@ th{font-weight:600}
 <script>
 (function(){
 'use strict';
-var S={all:[],brand:null,wantBrand:null,view:'overview',b:{metric:'soh',group:'outlet',type:'column',top:'10',order:'desc'},weeks:[],sel:null,outlet:null,heat:'soh',sortKey:'soh',sortDir:-1,skuSort:'soh',skuDir:-1,db:null,col:null,staged:[],confirmDel:null,loaded:false};
+var S={all:[],brand:null,wantBrand:null,view:'overview',q:'',b:{metric:'soh',group:'outlet',type:'column',top:'10',order:'desc'},weeks:[],sel:null,outlet:null,heat:'soh',sortKey:'soh',sortDir:-1,skuSort:'soh',skuDir:-1,db:null,col:null,staged:[],confirmDel:null,loaded:false};
 var $=function(s){return document.querySelector(s)};
 function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function fmt(n){return n==null||isNaN(n)?'–':Math.round(n).toLocaleString('en-US')}
@@ -388,12 +392,14 @@ function outletTable(w){
     var hist=[];for(var j=Math.max(0,idx-7);j<=idx;j++){var t=totals(S.weeks[j],o);hist.push(t?t.st:0)}
     return{o:o,soh:soh,st:st,rate:(soh+st)?st/(soh+st):-1,cov:cover(w.id,o),so:so,hist:hist}
   });
+  var tot=rows.length;rows=rows.filter(function(r){return qm(r.o)});qnote(rows.length,tot,'outlets');
   var k=S.sortKey,d=S.sortDir;
   rows.sort(function(a,b){var x=k==='o'?a.o:(a[k]==null?-Infinity:a[k]),y=k==='o'?b.o:(b[k]==null?-Infinity:b[k]);return(x<y?-1:x>y?1:0)*d});
   var h='<table><thead><tr>'+th('Outlet','o',k,d,'ok')+th('On hand','soh',k,d,'ok')+th('Sold','st',k,d,'ok')+th('Rate','rate',k,d,'ok')+th('Wks cover','cov',k,d,'ok')+th('Stock-outs','so',k,d,'ok')+'<th>Sold, last 8 wks</th></tr></thead><tbody>';
   rows.forEach(function(r){h+='<tr class="click'+(r.o===S.outlet?' sel':'')+'" data-o="'+esc(r.o)+'"><td><b>'+esc(r.o)+'</b></td><td>'+fmt(r.soh)+'</td><td>'+fmt(r.st)+'</td><td>'+pct(r.rate<0?null:r.rate)+'</td><td>'+f1(r.cov)+'</td><td>'+soPill(r.so)+'</td><td>'+spark(r.hist,'var(--s2)')+'</td></tr>'});
+  if(!rows.length)h+='<tr><td colspan="7" class="sub" style="padding:16px">No outlets match “'+esc(S.q)+'”.</td></tr>';
   var t=totals(w,null);
-  h+='</tbody><tfoot><tr><td><b>Total</b></td><td><b>'+fmt(t.soh)+'</b></td><td><b>'+fmt(t.st)+'</b></td><td><b>'+pct(t.rate)+'</b></td><td><b>'+f1(cover(w.id,null))+'</b></td><td>'+t.so+' cells</td><td></td></tr></tfoot></table>';
+  h+='</tbody><tfoot><tr><td><b>'+((S.q||'').trim()?'Total, all outlets':'Total')+'</b></td><td><b>'+fmt(t.soh)+'</b></td><td><b>'+fmt(t.st)+'</b></td><td><b>'+pct(t.rate)+'</b></td><td><b>'+f1(cover(w.id,null))+'</b></td><td>'+t.so+' cells</td><td></td></tr></tfoot></table>';
   var el=$('#outTbl');el.innerHTML=h;
   el.querySelectorAll('[data-ok]').forEach(function(b){b.onclick=function(){var key=b.getAttribute('data-ok');if(S.sortKey===key)S.sortDir*=-1;else{S.sortKey=key;S.sortDir=key==='o'?1:-1}render()}});
   el.querySelectorAll('tr.click').forEach(function(tr){tr.onclick=function(){var o=tr.getAttribute('data-o');S.outlet=S.outlet===o?null:o;render()}})
@@ -402,7 +408,9 @@ function heatmap(w){
   var O=w.outlets.length,K=w.skuIds.length,arr=S.heat==='soh'?w.soh:w.st,max=Math.max.apply(null,arr.concat([1]));
   var col=S.heat==='soh'?'var(--s1)':'var(--s2)';
   var h='<table><thead><tr><th class="sk">SKU</th>'+w.outlets.map(function(o){return'<th'+(o===S.outlet?' style="color:var(--accent)"':'')+'>'+esc(o)+'</th>'}).join('')+'</tr></thead><tbody>';
+  var shown=0;
   for(var s=0;s<K;s++){
+    if(!qm(w.skuDescs[s]+' '+w.skuIds[s]+' '+(w.skuBrands?w.skuBrands[s]:'')))continue;shown++;
     h+='<tr><td class="sk" title="'+esc(w.skuDescs[s])+'">'+esc(short(w.skuDescs[s]))+'</td>';
     for(var o=0;o<O;o++){
       var v=arr[s*O+o]||0,tt=esc(w.outlets[o])+' · '+esc(short(w.skuDescs[s]))+' · '+v;
@@ -411,6 +419,7 @@ function heatmap(w){
       else{var p=Math.round(10+75*v/max);h+='<td class="c" data-t="'+tt+'" style="background:color-mix(in srgb,'+col+' '+p+'%,var(--surface));color:'+(p>48?'#fff':'var(--ink)')+'">'+v+'</td>'}
     }
     h+='</tr>'}
+  qnote(shown,K,'SKUs');if(!shown)h+='<tr><td class="sub" style="padding:16px" colspan="'+(O+1)+'">No SKUs match “'+esc(S.q)+'”.</td></tr>';
   $('#heat').innerHTML=h+'</tbody></table>';
   $('#heat').querySelectorAll('td.c').forEach(function(td){td.addEventListener('mousemove',function(e){showTip(e,td.getAttribute('data-t'))});td.addEventListener('mouseleave',hideTip)});
   $('#heatLegend').innerHTML=S.heat==='soh'?'<span><i style="background:color-mix(in srgb,var(--s1) 20%,var(--surface))"></i>fewer units</span><span><i style="background:color-mix(in srgb,var(--s1) 85%,var(--surface))"></i>more units</span><span><i style="background:var(--crit-soft);border:1px solid var(--crit)"></i>0 = out of stock</span>':'<span><i style="background:color-mix(in srgb,var(--s2) 20%,var(--surface))"></i>fewer sold</span><span><i style="background:color-mix(in srgb,var(--s2) 85%,var(--surface))"></i>more sold</span><span>· = nothing sold</span>'
@@ -424,17 +433,19 @@ function skuTable(w){
     for(var j=from;j<=idx;j++){var x=S.weeks[j],si=x.skuIds.indexOf(w.skuIds[s]);if(si<0)continue;var q=0,OO=x.outlets.length,xo=oi>=0?x.outlets.indexOf(S.outlet):-1;for(var o2=0;o2<OO;o2++){if(oi>=0&&o2!==xo)continue;q+=x.st[si*OO+o2]||0}sum+=q;n++}
     rows.push({b:w.skuBrands?w.skuBrands[s]:'',id:w.skuIds[s],d:w.skuDescs[s],soh:soh,st:st,rate:(soh+st)?st/(soh+st):-1,cov:sum?soh/(sum/n):null,so:so})
   }
+  var tot=rows.length;rows=rows.filter(function(r){return qm(r.d+' '+r.id+' '+r.b)});qnote(rows.length,tot,'SKUs');
   var k=S.skuSort,d=S.skuDir;
   rows.sort(function(a,b){var x=k==='d'?a.d:(a[k]==null?-Infinity:a[k]),y=k==='d'?b.d:(b[k]==null?-Infinity:b[k]);return(x<y?-1:x>y?1:0)*d});
   var h='<table><thead><tr>'+th('Item','d',k,d,'sk')+th('On hand','soh',k,d,'sk')+th('Sold','st',k,d,'sk')+th('Rate','rate',k,d,'sk')+th('Wks cover','cov',k,d,'sk')+th(S.outlet?'Out of stock here':'Outlets at 0','so',k,d,'sk')+'</tr></thead><tbody>';
   rows.forEach(function(r){h+='<tr><td class="desc"><div>'+esc(short(r.d))+'</div><div class="mono">'+esc(r.id)+(r.b?' · '+esc(r.b):'')+'</div></td><td>'+fmt(r.soh)+'</td><td>'+fmt(r.st)+'</td><td>'+pct(r.rate<0?null:r.rate)+'</td><td>'+f1(r.cov)+'</td><td>'+(S.outlet?(r.so?'<span class="pill crit">yes</span>':'<span class="pill none">no</span>'):soPill(r.so).replace(/ SKUs?/,' outlet'+(r.so>1?'s':'')))+'</td></tr>'});
+  if(!rows.length)h+='<tr><td colspan="6" class="sub" style="padding:16px">No SKUs match “'+esc(S.q)+'”.</td></tr>';
   var el=$('#skuTbl');el.innerHTML=h+'</tbody></table>';
   el.querySelectorAll('[data-sk]').forEach(function(b){b.onclick=function(){var key=b.getAttribute('data-sk');if(S.skuSort===key)S.skuDir*=-1;else{S.skuSort=key;S.skuDir=key==='d'?1:-1}render()}})
 }
 function weekTable(){
   var multi=brands().length>1;
   var h='<table><thead><tr><th>Week</th>'+(multi?'<th style="text-align:left">Brand</th>':'')+'<th>Report run</th><th>Outlets</th><th>SKUs</th><th>On hand</th><th>Sold</th></tr></thead><tbody>';
-  S.all.slice().sort(function(a,b){return byId(b,a)}).forEach(function(w){var t=totals(w,null),k=wkey(w),c=S.confirmDel===k;
+  S.all.slice().sort(function(a,b){return byId(b,a)}).filter(function(w){return qm(w.brand+' '+w.year+' wk '+w.week+' '+w.id)}).forEach(function(w){var t=totals(w,null),k=wkey(w),c=S.confirmDel===k;
     h+='<tr><td><b>'+w.year+' · Wk '+w.week+'</b></td>'+(multi?'<td style="text-align:left">'+esc(w.brand)+'</td>':'')+'<td>'+esc((w.executed||'').replace(/\s*\(.*\)/,''))+'</td><td>'+w.outlets.length+'</td><td>'+w.skuIds.length+'</td><td>'+fmt(t.soh)+'</td><td>'+fmt(t.st)+'</td></tr>'});
   var el=$('#wkTbl');el.innerHTML=h+'</tbody></table>';
   el.querySelectorAll('[data-ask]').forEach(function(b){b.onclick=function(){S.confirmDel=b.getAttribute('data-ask');weekTable()}});
@@ -459,7 +470,10 @@ function coverG(id,o,sid){
 }
 function mv(w,metric,o,sid){var a=agg(w,o,sid);if(!a)return null;return metric==='cover'?coverG(w.id,o,sid):a[metric]}
 function fOf(metric){return metric==='rate'?pct:metric==='cover'?f1:fmt}
-function shell(side,res){return'<div class="shell"><aside class="side" aria-label="Selections">'+side+'</aside><div class="res">'+res+'</div></div>'}
+function qm(txt){var t=(S.q||'').trim().toLowerCase();if(!t)return true;txt=String(txt).toLowerCase();return t.split(/\s+/).every(function(x){return txt.indexOf(x)>=0})}
+function qnote(shown,total,what){var el=$('#qNote');if(el)el.textContent=(S.q||'').trim()?('Showing '+shown+' of '+total+' '+what):''}
+function qbar(){return'<div class="qbar" role="search"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 16l4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input id="q" type="search" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" placeholder="Search SKU, item ID, brand or outlet" aria-label="Search SKU, item ID, brand or outlet" value="'+esc(S.q||'')+'"></div><div class="sub qnote" id="qNote" aria-live="polite"></div>'}
+function shell(side,res){return'<div class="shell"><aside class="side" aria-label="Selections">'+side+'</aside><div class="res">'+qbar()+res+'</div></div>'}
 function slug(b){return String(b).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}
 function logoHtml(b,i){
   if(b==='ALL')return'<span class="wm all" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M3 3h8v8H3zm10 0h8v8h-8zM3 13h8v8H3zm10 0h8v8h-8z"/></svg></span>';
@@ -619,7 +633,18 @@ function drawCharts(w){
   mline($('#p12'),S.weeks.map(wlabel),ser);
   scatter($('#p13'),w.outlets.map(function(n){var a=agg(w,n,null);return{x:a.soh,y:a.st,label:n,hl:n===S.outlet}}))
 }
+function bindQ(){
+  var q=$('#q');if(!q)return;
+  q.addEventListener('input',function(){
+    S.q=q.value;var w=W(S.sel);if(!w)return;
+    if(S.view==='overview'||S.view==='charts'){if(!S.q.trim())return;S.view='skus';render();var n=$('#q');if(n){n.focus();try{n.setSelectionRange(n.value.length,n.value.length)}catch(e){}}return}
+    if(S.view==='outlets')outletTable(w);else if(S.view==='grid')heatmap(w);else if(S.view==='skus')skuTable(w);else if(S.view==='weeks')weekTable();
+  });
+  q.addEventListener('keydown',function(e){if(e.key==='Escape'&&q.value){q.value='';q.dispatchEvent(new Event('input'))}});
+  if((S.q||'').trim()){var w=W(S.sel);if(w){if(S.view==='outlets')outletTable(w);else if(S.view==='grid')heatmap(w);else if(S.view==='skus')skuTable(w);else if(S.view==='weeks')weekTable()}}
+}
 function bindBar(){
+  bindQ();
   document.querySelectorAll('[data-sec]').forEach(function(b){b.onclick=function(){S.view=b.getAttribute('data-sec');render();if(window.innerWidth<=900){var r=document.querySelector('.res');if(r)r.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth',block:'start'})}}});
   document.querySelectorAll('[data-brand]').forEach(function(b){b.onclick=function(){S.brand=b.getAttribute('data-brand');derive();render()}});
   wmFix();
