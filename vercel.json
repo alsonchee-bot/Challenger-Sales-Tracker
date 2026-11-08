@@ -23,5 +23,16 @@
         }
       ]
     }
-  ]
+  ],
+  "crons": [
+    {
+      "path": "/api/sync",
+      "schedule": "0 1 * * *"
+    }
+  ],
+  "functions": {
+    "api/sync.js": {
+      "maxDuration": 60
+    }
+  }
 }
