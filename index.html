@@ -177,9 +177,9 @@ th{font-weight:600}
 .sd-row .brandlist{flex-direction:column;flex-wrap:nowrap}.sd-row .bl{padding:5px 4px;min-height:54px}.sd-row .blogo{padding:3px 4px}
 .sd-row .bl:has(.bname) .bname{display:none}.sd-row .bl:has(.bname) .blogo{width:100%;flex:1 1 auto}
 .submenu{display:flex;flex-direction:column;gap:4px}
-.sm{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-height:44px;padding:8px 10px;border:1px solid transparent;background:transparent;border-radius:6px;text-align:left;font-weight:500;font-size:14px;color:var(--ink);cursor:pointer}
-.sm:hover{background:var(--surface-2)}.sm.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
-.smn{font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums}.sm.on .smn{color:var(--accent)}
+.smi{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-height:44px;padding:8px 10px;border:1px solid transparent;background:transparent;border-radius:6px;text-align:left;font-weight:500;font-size:14px;color:var(--ink);cursor:pointer}
+.smi:hover{background:var(--surface-2)}.smi.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
+.smn{font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums}.smi.on .smn{color:var(--accent)}
 .res{scroll-margin-top:70px}
 .totop{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--ink);box-shadow:0 2px 10px rgba(0,0,0,.2);font-size:20px;line-height:1;display:grid;place-items:center;cursor:pointer;opacity:0;pointer-events:none;transform:translateY(8px);transition:opacity .2s,transform .2s;z-index:50}
 .totop.show{opacity:1;pointer-events:auto;transform:none}.totop:hover{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
@@ -188,6 +188,24 @@ th{font-weight:600}
 .qbar:focus-within{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
 .qbar input{flex:1;min-width:0;border:0;outline:0;background:transparent;color:var(--ink);font:inherit;font-size:16px;padding:12px 0}
 .qnote{min-height:18px;margin:0 2px 8px}
+.btn[hidden]{display:none}
+.gate{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto}.gate[hidden]{display:none}
+body.locked{overflow:hidden}body.locked .nav,body.locked #main,body.locked #userBox{visibility:hidden}
+.gcard{width:min(400px,100%);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:24px;color:var(--ink)}
+.gcard h2{margin:0 0 4px;font-size:22px}
+.gbrand{display:flex;align-items:center;gap:12px;margin-bottom:18px}.gbrand img{height:44px;width:auto;border-radius:6px;border:1px solid var(--line-soft);padding:3px 8px;background:#fff}.gbrand span{font-weight:500;font-size:20px}
+.gcard label,.uadd label{display:block;font-weight:600;font-size:13px;color:var(--ink-2);margin:12px 0 4px}
+.gcard input[type=text],.gcard input[type=password],.uadd input,.uadd select,.uin{width:100%;box-sizing:border-box;padding:11px 12px;font-size:16px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink)}
+.gcard input:focus,.uadd input:focus,.uadd select:focus,.uin:focus{outline:2px solid var(--accent);outline-offset:1px}
+.gcard label.gshow{display:flex;align-items:center;gap:8px;font-weight:500;margin-top:10px}
+.gerr{color:var(--crit);min-height:20px;margin-top:10px;font-size:14px}.gok{color:var(--ok,#1a7f4b);margin-bottom:10px;font-size:14px}
+.gbtn{justify-content:center;min-height:44px;margin-top:6px}.gcard form>.gbtn{width:100%}.grow{display:flex;gap:8px}.grow .gbtn{flex:1}
+.ubox{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}.ubox[hidden]{display:none}.uname{font-weight:600;color:var(--ink-2)}
+.ulist{border:1px solid var(--line-soft);border-radius:8px;margin-bottom:16px}
+.urow{display:flex;flex-wrap:wrap;gap:8px 12px;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line-soft)}.urow:last-child{border-bottom:0}
+.uinfo{min-width:0}.uact{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.uform{display:flex;gap:6px;flex-wrap:wrap}.uform .uin{width:200px;padding:6px 8px;font-size:14px}
+.ugrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}
+@media (max-width:520px){.ugrid{grid-template-columns:minmax(0,1fr)}}
 </style></head><body><div class="nav"><span class="logo"><img src="logo-murano.png" alt="Murano"><span>Analytics</span></span><span class="org">Challenger</span>
 <a class="on">Graphs</a><a data-nav="imp">Data input</a><a data-nav="exp">Export</a><span class="sp"></span><span class="ic">?</span><span class="ic">&#8962;</span></div>
 
@@ -202,6 +220,7 @@ th{font-weight:600}
       <input type="file" id="file" accept=".xlsx,.xls" multiple hidden>
       <button class="btn primary" id="btnImport">Import weekly file</button>
       <button class="btn" id="btnExport">Export data</button>
+      <span class="ubox" id="userBox" hidden><span class="uname" id="uName"></span><button class="btn" id="btnUsers" type="button" hidden>Users</button><button class="btn" id="btnPw" type="button">Password</button><button class="btn" id="btnOut" type="button">Sign out</button></span>
     </div>
   </div>
 
@@ -499,7 +518,7 @@ function sideHtml(w){
 function submenu(w){
   var V=S.view,items=[['overview','Overview','KPIs, weekly trend'],['outlets','Outlets',w.outlets.length],['grid','Outlet × SKU grid',''],['skus','SKUs',w.skuIds.length],['charts','Charts',''],['weeks','Loaded weeks',S.weeks.length]];
   return'<nav class="submenu" aria-label="Data to view">'+items.map(function(it){var on=(V===it[0])||(it[0]==='overview'&&['overview','outlets','grid','skus','charts','weeks'].indexOf(V)<0);
-    return'<button type="button" class="sm'+(on?' on':'')+'" data-sec="'+it[0]+'" aria-pressed="'+on+'"><span class="smt">'+it[1]+'</span>'+(typeof it[2]==='number'?'<span class="smn">'+it[2]+'</span>':'')+'</button>'}).join('')+'</nav>'
+    return'<button type="button" class="smi'+(on?' on':'')+'" data-sec="'+it[0]+'" aria-pressed="'+on+'"><span class="smt">'+it[1]+'</span>'+(typeof it[2]==='number'?'<span class="smn">'+it[2]+'</span>':'')+'</button>'}).join('')+'</nav>'
 }
 function selHtml(id,label,opts,cur){return'<div class="field"><label for="'+id+'">'+label+'</label><select id="'+id+'">'+opts.map(function(o){return'<option value="'+esc(o[0])+'"'+(String(cur)===String(o[0])?' selected':'')+'>'+esc(o[1])+'</option>'}).join('')+'</select></div>'}
 function brandField(){var bl=brands(),o=bl.map(function(b){return[b,b]});if(bl.length>1)o.unshift(['ALL','All brands']);return selHtml('selBrand','Brand',o,S.brand)}
@@ -840,70 +859,165 @@ document.addEventListener('dragover',function(e){e.preventDefault()});
 document.addEventListener('drop',function(e){e.preventDefault();if(e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files.length)handleFiles(e.dataTransfer.files)});
 var rt;window.addEventListener('resize',function(){clearTimeout(rt);rt=setTimeout(function(){if(S.all.length)render()},150)});
 function badge(t){var b=$('#storeBadge');b.textContent=t;b.hidden=false}
-var SB_URL='https://eobbpalodywqszcrqyzt.supabase.co',SB_KEY='sb_publishable_Sz-CZ-ZnVDYRY0CMQR5Jyw_UzsDLEYa';
+var SB_URL='https://eobbpalodywqszcrqyzt.supabase.co',SB_KEY='sb_publishable_Sz-CZ-ZnVDYRY0CMQR5Jyw_UzsDLEYa',MAIL='@sellthru.example.com';
+var LIVE={raw:'',ok:false,off:false},pollT=null;
 var sb=(function(){
-  var AUTH=null,after=null;
-  try{AUTH=JSON.parse(localStorage.getItem('sb-auth')||'null')}catch(e){}
-  function save(a){AUTH=a;try{if(a)localStorage.setItem('sb-auth',JSON.stringify(a));else localStorage.removeItem('sb-auth')}catch(e){}paint()}
-  function paint(){var b=$('#btnAuth');if(b){b.textContent=AUTH?'Sign out':'Editor login';b.title=AUTH?('Signed in as '+AUTH.email):'Editors sign in to delete weeks'}}
-  function msg(r,j){return(j&&(j.message||j.msg||j.error_description||j.error))||('Request failed ('+r.status+')')}
-  function post(path,body,token){
-    return fetch(SB_URL+path,{method:'POST',headers:{'apikey':SB_KEY,'Content-Type':'application/json','Authorization':'Bearer '+(token||SB_KEY)},body:JSON.stringify(body)})
-      .then(function(r){return r.text().then(function(t){var j=null;try{j=t?JSON.parse(t):null}catch(e){}if(!r.ok){var e=new Error(msg(r,j));e.status=r.status;throw e}return j})})
+  var AUTH=null,PROF=null,U={list:[],edit:null,del:null,msg:'',err:''};
+  try{AUTH=JSON.parse(localStorage.getItem('sb-auth2')||'null')}catch(e){}
+  function save(a){AUTH=a;try{if(a)localStorage.setItem('sb-auth2',JSON.stringify(a));else localStorage.removeItem('sb-auth2')}catch(e){}}
+  function call(method,path,body,tok){
+    return fetch(SB_URL+path,{method:method,headers:{'apikey':SB_KEY,'Content-Type':'application/json','Authorization':'Bearer '+(tok||SB_KEY)},body:body==null?undefined:JSON.stringify(body)})
+      .then(function(r){return r.text().then(function(t){var j=null;try{j=t?JSON.parse(t):null}catch(e){}
+        if(!r.ok){var m=(j&&(j.message||j.msg||j.error_description||j.error))||('Request failed ('+r.status+')');var e=new Error(m);e.status=r.status;throw e}return j})})
   }
   function setSession(j){save({at:j.access_token,rt:j.refresh_token,exp:Math.floor(Date.now()/1000)+(j.expires_in||3600),email:(j.user&&j.user.email)||(AUTH&&AUTH.email)||''})}
   function token(){
     if(!AUTH)return Promise.resolve(null);
     if(AUTH.exp-60>Date.now()/1000)return Promise.resolve(AUTH.at);
-    return post('/auth/v1/token?grant_type=refresh_token',{refresh_token:AUTH.rt}).then(function(j){setSession(j);return AUTH.at}).catch(function(){save(null);return null})
+    return call('POST','/auth/v1/token?grant_type=refresh_token',{refresh_token:AUTH.rt}).then(function(j){setSession(j);return AUTH.at}).catch(function(){save(null);return null})
   }
+  function rpc(name,args){
+    return token().then(function(t){
+      if(!t){var e=new Error('Please sign in.');e.status=401;throw e}
+      return call('POST','/rest/v1/rpc/'+name,args||{},t)
+    }).catch(function(e){if(e&&e.status===401&&api.started)api.lock('Your session ended. Please sign in again.');throw e})
+  }
+  function loadProfile(){return rpc('my_profile',{}).then(function(a){if(!a||!a[0])throw new Error('This account has no profile. Ask an admin.');PROF=a[0];return PROF})}
+  function esc2(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+  function gateEl(){var g=$('#gate');if(!g){g=document.createElement('div');g.id='gate';g.className='gate';document.body.appendChild(g)}return g}
+  function setLocked(on){document.body.classList.toggle('locked',on);var g=$('#gate');if(g)g.hidden=!on}
   var api={
-    signedIn:function(){return!!AUTH},
-    rpc:function(name,args,needAuth){
-      return token().then(function(t){
-        if(needAuth&&!t){api.openAuth('Sign in as an editor to delete weeks.');throw new Error('Sign in required')}
-        return post('/rest/v1/rpc/'+name,args||{},needAuth?t:null)
-      }).catch(function(e){if(e&&(e.status===401||e.status===403||/row-level security|permission denied/i.test(e.message||'')))e.message='Your login is not allowed to change data. Ask the admin to add your email as an editor.';throw e})
+    started:false,
+    profile:function(){return PROF},
+    stop:function(){clearInterval(pollT);pollT=null},
+    lock:function(note){
+      api.stop();api.started=false;save(null);PROF=null;S.all=[];S.weeks=[];S.loaded=false;LIVE.raw='';
+      var ub=$('#userBox');if(ub)ub.hidden=true;var b=$('#storeBadge');if(b)b.hidden=true;
+      var d=$('#usrDlg');if(d)d.hidden=true;var ip=$('#importPanel');if(ip)ip.hidden=true;
+      try{render()}catch(e){}
+      api.gate('login',note)
     },
-    openAuth:function(note){
-      var d=$('#authDlg');if(!d){d=document.createElement('div');d.id='authDlg';d.className='exov';document.body.appendChild(d)}
-      d.hidden=false;
-      d.innerHTML='<div class="exbox" role="dialog" aria-label="Sign in" style="width:min(400px,100%)"><div class="exhd"><b>Sign in</b><button class="btn sm" id="auX" type="button">Close</button></div><form class="exbd" id="auForm"><div class="sub" style="margin-bottom:10px">'+(note||'Only needed to delete weeks. Viewing and importing need no login.')+'</div><label class="exlab" for="auEmail">Email</label><input id="auEmail" type="email" required autocomplete="username" style="width:100%;margin-bottom:10px;padding:8px;border:1px solid var(--line);border-radius:4px;background:var(--surface);color:var(--ink)"><label class="exlab" for="auPass">Password</label><input id="auPass" type="password" required autocomplete="current-password" style="width:100%;padding:8px;border:1px solid var(--line);border-radius:4px;background:var(--surface);color:var(--ink)"><div id="auErr" role="alert" style="color:var(--crit);margin-top:10px;min-height:18px"></div><div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="btn primary" id="auGo" type="submit">Sign in</button></div></form></div>';
-      setTimeout(function(){var e=$('#auEmail');if(e)e.focus()},30)
+    gate:function(mode,note,voluntary){
+      var g=gateEl();setLocked(true);
+      var logo='<div class="gbrand"><img src="logo-murano.png" alt="Murano"><span>Analytics</span></div>';
+      if(mode==='login'){
+        g.innerHTML='<div class="gcard" role="dialog" aria-label="Sign in">'+logo+'<h2>Sign in</h2><div class="sub" style="margin-bottom:14px">Murano Sell-Thru Tracker</div>'+
+          '<form id="gForm" novalidate><label for="gUser">Username</label><input id="gUser" type="text" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required>'+
+          '<label for="gPass">Password</label><input id="gPass" type="password" autocomplete="current-password" required>'+
+          '<label class="gshow"><input type="checkbox" id="gShow"> Show password</label>'+
+          '<div id="gErr" role="alert" class="gerr">'+esc2(note||'')+'</div><button class="btn primary gbtn" id="gGo" type="submit">Sign in</button></form>'+
+          '<div class="sub" style="margin-top:14px">Accounts are created by an admin. Forgot your password? Ask your admin to reset it.</div></div>';
+        setTimeout(function(){var u=$('#gUser');if(u)u.focus()},30)
+      }else{
+        g.innerHTML='<div class="gcard" role="dialog" aria-label="Change password">'+logo+'<h2>'+(voluntary?'Change password':'Set a new password')+'</h2>'+
+          '<div class="sub" style="margin-bottom:14px">'+(voluntary?'Choose a new password (at least 8 characters).':'Hi '+esc2(PROF&&PROF.display_name)+', you are using a temporary password. Choose your own to continue (at least 8 characters).')+'</div>'+
+          '<form id="gForm" data-mode="change" novalidate><label for="gNew">New password</label><input id="gNew" type="password" autocomplete="new-password" required>'+
+          '<label for="gNew2">Confirm new password</label><input id="gNew2" type="password" autocomplete="new-password" required>'+
+          '<label class="gshow"><input type="checkbox" id="gShow"> Show passwords</label>'+
+          '<div id="gErr" role="alert" class="gerr"></div><div class="grow"><button class="btn primary gbtn" id="gGo" type="submit">Save password</button>'+
+          (voluntary?'<button class="btn gbtn" type="button" id="gCancel">Cancel</button>':'<button class="btn gbtn" type="button" id="gOut">Sign out</button>')+'</div></form></div>';
+        setTimeout(function(){var u=$('#gNew');if(u)u.focus()},30)
+      }
     },
-    closeAuth:function(){var d=$('#authDlg');if(d)d.hidden=true},
-    needAuth:function(fn,note){if(AUTH)fn();else{after=fn;api.openAuth(note)}},
-    signIn:function(email,pass){
-      return post('/auth/v1/token?grant_type=password',{email:email,password:pass}).then(function(j){setSession(j);api.closeAuth();toast('Signed in as '+AUTH.email);var f=after;after=null;if(f)f()})
+    signIn:function(user,pass){
+      var u=String(user||'').trim().toLowerCase();if(!u||!pass)return Promise.reject(new Error('Enter your username and password.'));
+      var email=u.indexOf('@')>0?u:u+MAIL;
+      return call('POST','/auth/v1/token?grant_type=password',{email:email,password:pass}).then(function(j){setSession(j);return loadProfile()})
+        .catch(function(e){if(e.status===400||/invalid/i.test(e.message))e.message='Wrong username or password.';throw e})
     },
-    signOut:function(){if(AUTH){var t=AUTH.at;fetch(SB_URL+'/auth/v1/logout',{method:'POST',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+t}}).catch(function(){})}save(null);toast('Signed out.')},
-    paint:paint
+    enter:function(){
+      api.started=true;setLocked(false);
+      var ub=$('#userBox');ub.hidden=false;$('#uName').textContent=PROF.display_name;$('#btnUsers').hidden=PROF.role!=='admin';
+      loadLive(true);api.stop();
+      pollT=setInterval(function(){if(!document.hidden&&!$('#importPanel').offsetParent&&!(($('#exDlg')&&!$('#exDlg').hidden)||($('#usrDlg')&&!$('#usrDlg').hidden)))loadLive(false)},60000)
+    },
+    start:function(){
+      if(!AUTH){api.gate('login');return}
+      loadProfile().then(function(){if(PROF.must_change_password)api.gate('change');else api.enter()})
+        .catch(function(e){if(AUTH&&e&&e.status&&e.status!==401&&e.status<500){api.gate('login',e.message)}else if(!AUTH||(e&&e.status===401)){api.gate('login')}else{api.gate('login','Could not reach the server. Check your connection and try again.')}})
+    },
+    signOut:function(){var t=AUTH&&AUTH.at;if(t)fetch(SB_URL+'/auth/v1/logout',{method:'POST',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+t}}).catch(function(){});api.lock('');toast('Signed out.')},
+    changePassword:function(p){return token().then(function(t){if(!t)throw new Error('Please sign in.');return call('PUT','/auth/v1/user',{password:p},t)}).then(function(){return rpc('password_changed',{})}).then(function(){PROF.must_change_password=false})},
+    rpc:rpc,
+    /* ---- user management (admin) ---- */
+    users:function(){
+      var d=$('#usrDlg');if(!d){d=document.createElement('div');d.id='usrDlg';d.className='exov';document.body.appendChild(d)}
+      d.hidden=false;U.edit=null;U.del=null;U.msg='';U.err='';
+      d.innerHTML='<div class="exbox" role="dialog" aria-label="Users"><div class="exhd"><b>Users</b><button class="btn sm" id="uClose" type="button">Close</button></div><div class="exbd" id="uBody">Loading…</div></div>';
+      api.usersLoad()
+    },
+    usersLoad:function(){return rpc('admin_list_users',{}).then(function(a){U.list=a||[];api.usersDraw()}).catch(function(e){U.err=e.message;api.usersDraw()})},
+    usersDraw:function(){
+      var b=$('#uBody');if(!b)return;var me=PROF&&PROF.username;
+      var h=(U.msg?'<div class="gok">'+esc2(U.msg)+'</div>':'')+(U.err?'<div class="gerr" role="alert">'+esc2(U.err)+'</div>':'');
+      h+='<div class="ulist">'+U.list.map(function(u){
+        var row='<div class="urow"><div class="uinfo"><b>'+esc2(u.display_name)+'</b> <span class="mono">'+esc2(u.username)+'</span> <span class="pill '+(u.role==='admin'?'warn':'none')+'">'+esc2(u.role)+'</span>'+(u.must_change_password?' <span class="pill none">temporary password</span>':'')+
+          '<div class="sub">'+(u.last_sign_in_at?'Last sign-in '+esc2(new Date(u.last_sign_in_at).toLocaleString()):'Never signed in')+'</div></div><div class="uact">';
+        if(U.edit===u.id)row+='<form class="uform" data-reset="'+esc2(u.id)+'"><input type="text" class="uin" placeholder="New temporary password" autocomplete="off" minlength="8" required><button class="btn sm primary" type="submit">Set</button><button class="btn sm" type="button" data-ucancel="1">Cancel</button></form>';
+        else if(U.del===u.id)row+='<span class="sub">Remove '+esc2(u.username)+'?</span> <button class="btn sm danger" data-udel="'+esc2(u.id)+'" type="button">Yes, remove</button> <button class="btn sm" data-ucancel="1" type="button">Keep</button>';
+        else{row+='<button class="btn sm" data-uedit="'+esc2(u.id)+'" type="button">Reset password</button>';if(u.username!==me)row+=' <button class="btn sm" data-uask="'+esc2(u.id)+'" type="button">Remove</button>'}
+        return row+'</div></div>'}).join('')+'</div>';
+      h+='<form id="uAdd" class="uadd" novalidate><div class="exlab">Add a user</div>'+
+        '<div class="ugrid"><div><label for="nuUser">Username</label><input id="nuUser" type="text" autocapitalize="none" autocomplete="off" spellcheck="false" placeholder="e.g. jamie" required></div>'+
+        '<div><label for="nuName">Display name</label><input id="nuName" type="text" autocomplete="off" placeholder="e.g. Jamie"></div>'+
+        '<div><label for="nuPass">Initial password</label><input id="nuPass" type="text" autocomplete="off" placeholder="min 8 characters" required></div>'+
+        '<div><label for="nuRole">Role</label><select id="nuRole"><option value="user">User</option><option value="admin">Admin</option></select></div></div>'+
+        '<div class="sub" style="margin:8px 0">The user must choose their own password the first time they sign in.</div><button class="btn primary" type="submit">Add user</button></form>';
+      b.innerHTML=h
+    },
+    usersAct:function(fn,okmsg){U.msg='';U.err='';return fn().then(function(){U.edit=null;U.del=null;U.msg=okmsg;return api.usersLoad()}).catch(function(e){U.err=e.message;api.usersDraw()})},
+    usersU:U
   };
-  document.addEventListener('click',function(e){var t=e.target;if(!t)return;
-    if(t.id==='btnAuth'){if(AUTH)api.signOut();else api.openAuth()}
-    if(t.id==='auX'||t.id==='authDlg')api.closeAuth()});
-  document.addEventListener('submit',function(e){if(e.target&&e.target.id==='auForm'){e.preventDefault();var b=$('#auGo');b.disabled=true;$('#auErr').textContent='';
-    api.signIn($('#auEmail').value.trim(),$('#auPass').value).catch(function(er){b.disabled=false;$('#auErr').textContent=/invalid/i.test(er.message)?'Wrong email or password.':er.message})}});
-  document.addEventListener('keydown',function(e){if(e.key==='Escape')api.closeAuth()});
+  document.addEventListener('click',function(e){var tg=e.target;if(!tg)return;
+    if(tg.id==='usrDlg'){tg.hidden=true;return}
+    var t=tg.closest?tg.closest('button'):null;if(!t)return;
+    if(t.id==='btnOut')api.signOut();
+    else if(t.id==='btnUsers')api.users();
+    else if(t.id==='btnPw')api.gate('change','',true);
+    else if(t.id==='gCancel'){setLocked(false)}
+    else if(t.id==='gOut')api.signOut();
+    else if(t.id==='uClose'){var d=$('#usrDlg');if(d)d.hidden=true}
+    else if(t.getAttribute&&t.getAttribute('data-uedit')){U.edit=t.getAttribute('data-uedit');U.del=null;U.err='';U.msg='';api.usersDraw()}
+    else if(t.getAttribute&&t.getAttribute('data-uask')){U.del=t.getAttribute('data-uask');U.edit=null;U.err='';U.msg='';api.usersDraw()}
+    else if(t.getAttribute&&t.getAttribute('data-ucancel')){U.edit=null;U.del=null;api.usersDraw()}
+    else if(t.getAttribute&&t.getAttribute('data-udel')){var id=t.getAttribute('data-udel');api.usersAct(function(){return rpc('admin_delete_user',{p_user:id})},'User removed.')}
+  });
+  document.addEventListener('change',function(e){if(e.target&&e.target.id==='gShow'){var on=e.target.checked;document.querySelectorAll('#gate input[type=password],#gate input[data-pw]').forEach(function(i){i.type=on?'text':'password';i.setAttribute('data-pw','1')})}});
+  document.addEventListener('submit',function(e){var f=e.target;if(!f)return;
+    if(f.id==='gForm'){e.preventDefault();var err=$('#gErr'),b=$('#gGo');err.textContent='';
+      if(f.getAttribute('data-mode')==='change'){
+        var p=$('#gNew').value,p2=$('#gNew2').value;
+        if(p.length<8){err.textContent='Use at least 8 characters.';return}
+        if(p.toLowerCase()==='password'){err.textContent='Choose something other than the default password.';return}
+        if(p!==p2){err.textContent='The two passwords do not match.';return}
+        b.disabled=true;api.changePassword(p).then(function(){toast('Password updated.');if(api.started)setLocked(false);else api.enter()}).catch(function(er){b.disabled=false;err.textContent=er.message})
+      }else{
+        b.disabled=true;api.signIn($('#gUser').value,$('#gPass').value).then(function(){if(PROF.must_change_password)api.gate('change');else api.enter()}).catch(function(er){b.disabled=false;err.textContent=er.message;var p=$('#gPass');if(p){p.value='';p.focus()}})
+      }
+    }else if(f.id==='uAdd'){e.preventDefault();
+      var un=$('#nuUser').value,pw=$('#nuPass').value;
+      api.usersAct(function(){return rpc('admin_create_user',{p_username:un,p_display_name:$('#nuName').value,p_password:pw,p_role:$('#nuRole').value})},'Added '+un.trim().toLowerCase()+'. Give them the initial password you set.')
+    }else if(f.getAttribute&&f.getAttribute('data-reset')){e.preventDefault();var id=f.getAttribute('data-reset'),np=f.querySelector('.uin').value;
+      api.usersAct(function(){return rpc('admin_set_password',{p_user:id,p_password:np})},'Password reset. The user must choose a new one at next sign-in.')}
+  });
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'){var d=$('#usrDlg');if(d&&!d.hidden)d.hidden=true}});
   return api
 })();
-var LIVE={raw:'',ok:false,off:false};
-function liveBadge(){var bl=brands().length;badge(LIVE.off?'Offline copy (read-only)':('Live data · '+S.all.length+' weeks, '+bl+' brand'+(bl===1?'':'s')))}
+function liveBadge(){var bl=brands().length;badge(LIVE.off?'Live data unavailable':('Live data · '+S.all.length+' weeks, '+bl+' brand'+(bl===1?'':'s')))}
 function loadLive(first){
-  return sb.rpc('get_weeks',{},false).then(function(a){
+  return sb.rpc('get_weeks',{}).then(function(a){
     if(!Array.isArray(a))throw new Error('bad response');
     var raw=JSON.stringify(a);LIVE.off=false;
     if(!first&&raw===LIVE.raw)return;
     LIVE.raw=raw;S.all=a.map(norm);S.loaded=true;derive();liveBadge();render()
-  }).catch(function(){
-    if(!first)return;
-    return fetch('weeks.json?v='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.json():[]}).catch(function(){return[]}).then(function(a){LIVE.off=true;S.all=(a||[]).map(norm);S.loaded=true;derive();liveBadge();render()})
+  }).catch(function(e){
+    if(!sb.started)return;
+    if(first||!S.loaded){S.all=[];S.loaded=true;LIVE.off=true;derive();render()}
+    LIVE.off=true;badge('Live data unavailable · '+((e&&e.message)||'check connection')+' · will retry')
   })
 }
-sb.paint();
-loadLive(true);
-setInterval(function(){if(!document.hidden&&!$('#importPanel').offsetParent&&!(($('#exDlg')&&!$('#exDlg').hidden)||($('#authDlg')&&!$('#authDlg').hidden)))loadLive(false)},60000);
-document.addEventListener('visibilitychange',function(){if(!document.hidden&&S.loaded)loadLive(false)});
+sb.start();
+document.addEventListener('visibilitychange',function(){if(!document.hidden&&S.loaded&&sb.started)loadLive(false)});
 })();
 </script>
 <script>

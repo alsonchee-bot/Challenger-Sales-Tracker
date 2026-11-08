@@ -47,3 +47,7 @@ their own browser; Reset to published data returns them to what is in weeks.json
   sell-thru over the last four weeks.
 - The data is public to anyone with the site URL. For private access use Vercel Deployment Protection
   (password or SSO, on paid plans), and keep the GitHub repository private.
+
+## Users and sign-in
+
+Sign-in uses Supabase Auth (`auth.users`, passwords stored as bcrypt hashes). Usernames map to `<username>@sellthru.example.com`. `public.profiles` links each auth user to a username, display name, role (`admin` / `user`) and a `must_change_password` flag. Only admins can add users, reset passwords or remove users (RPC functions `admin_*`). Self sign-up is blocked by a trigger on `auth.users`. All sell-thru data is readable and writable only by signed-in users.
