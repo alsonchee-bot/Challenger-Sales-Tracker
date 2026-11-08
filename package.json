@@ -1,7 +1,0 @@
-{
-  "name": "challenger-sales-tracker",
-  "private": true,
-  "version": "1.0.0",
-  "engines": { "node": ">=20" },
-  "dependencies": { "xlsx": "0.18.5" }
-}

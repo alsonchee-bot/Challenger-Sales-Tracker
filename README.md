@@ -47,19 +47,3 @@ their own browser; Reset to published data returns them to what is in weeks.json
   sell-thru over the last four weeks.
 - The data is public to anyone with the site URL. For private access use Vercel Deployment Protection
   (password or SSO, on paid plans), and keep the GitHub repository private.
-
-## Weekly auto-import (Google Drive → Supabase)
-
-`api/sync.js` runs daily from a Vercel cron (see `vercel.json`). It reads Excel files modified in the last 14 days from a Google Drive folder, parses them with the same logic as the site (`api/_parse.js`), and saves Mazer, Panzerglass, Pitaka and Sudio weeks to Supabase. Re-running is safe: saving a week replaces it.
-
-Vercel environment variables:
-
-| Name | Value |
-| --- | --- |
-| `GOOGLE_SERVICE_ACCOUNT_JSON` | the service account key file (raw JSON or base64) |
-| `DRIVE_FOLDER_ID` | ID of the "Challenger SOH 2026" folder (shared with the service account as Viewer) |
-| `CRON_SECRET` | any long random string (Vercel sends it with cron calls) |
-| `SYNC_BRANDS` | optional, default `MAZER,PANZERGLASS,PITAKA,SUDIO` |
-| `SYNC_DAYS` | optional, default `14` |
-
-Check without saving: `/api/sync?dry=1` (send header `Authorization: Bearer <CRON_SECRET>`).
