@@ -1,7 +1,7 @@
 /**
  * Murano Sell-Thru Tracker: weekly auto-import (Google Apps Script)
  *
- * Every Monday ~11am this script reads new weekly Excel files from one Google Drive folder,
+ * Every Monday ~11am this script reads new weekly Excel files from one Google Drive folder and from the Monday report emails (Gmail),
  * works out the brand and week from inside each file, and saves them to the tracker's database.
  * It runs on Google's servers under your Google account (free, no Google Cloud billing).
  *
@@ -10,6 +10,7 @@
 var CONFIG = {
   FOLDER_ID: '1x6_4xlpTuK2d9FT4htwkXE5ke6_ISC9r',               // the Drive folder the weekly files land in
   BRANDS: ['MAZER', 'PANZERGLASS', 'PITAKA', 'SUDIO'],           // brands to import; everything else is skipped
+  MAIL_FROM: 'mis@challenger.sg',                                 // also read Excel attachments from this sender
   LOOKBACK_DAYS: 8,                                               // only look at files changed in the last N days
   SUPABASE_URL: 'https://eobbpalodywqszcrqyzt.supabase.co',
   SUPABASE_KEY: 'sb_publishable_Sz-CZ-ZnVDYRY0CMQR5Jyw_UzsDLEYa', // public key, same one the website uses
@@ -30,20 +31,30 @@ function installTrigger() {                // run once: schedules importWeekly e
 function run_(dry) {
   var res = { started: new Date().toISOString(), saved: [], skipped: [], errors: [] };
   try {
-    var since = Date.now() - CONFIG.LOOKBACK_DAYS * 86400000, files = [];
+    var since = Date.now() - CONFIG.LOOKBACK_DAYS * 86400000, items = [];
+    // 1) Excel files in the Drive folder
     var it = DriveApp.getFolderById(CONFIG.FOLDER_ID).getFiles();
     while (it.hasNext()) {
-      var f = it.next(), n = f.getName();
-      if (!/\.xlsx?$/i.test(n)) continue;
+      var f = it.next();
+      if (!/\.xlsx?$/i.test(f.getName())) continue;
       if (f.getLastUpdated().getTime() < since) continue;
-      files.push(f);
+      items.push({ name: f.getName(), time: f.getLastUpdated().getTime(), blob: f.getBlob(), key: f.getId() });
     }
-    files.sort(function (a, b) { return a.getLastUpdated() - b.getLastUpdated(); }); // oldest first, so the newest copy of a week wins
+    // 2) Excel attachments on the Monday emails from the Challenger report mailer
+    GmailApp.search('from:' + CONFIG.MAIL_FROM + ' has:attachment newer_than:' + CONFIG.LOOKBACK_DAYS + 'd').forEach(function (th) {
+      th.getMessages().forEach(function (m) {
+        m.getAttachments({ includeInlineImages: false, includeAttachments: true }).forEach(function (a, i) {
+          if (!/\.xlsx?$/i.test(a.getName())) return;
+          items.push({ name: a.getName(), time: m.getDate().getTime(), blob: a.copyBlob(), key: m.getId() + '-' + i });
+        });
+      });
+    });
+    items.sort(function (a, b) { return a.time - b.time; }); // oldest first, so the newest copy of a week wins
     var weeks = {};
-    files.forEach(function (f) {
-      var name = f.getName(), tmpId = null;
+    items.forEach(function (f) {
+      var name = f.name, tmpId = null;
       try {
-        tmpId = Drive.Files.create({ name: 'tmp-import-' + f.getId(), mimeType: 'application/vnd.google-apps.spreadsheet' }, f.getBlob()).id;
+        tmpId = Drive.Files.create({ name: 'tmp-import-' + f.key, mimeType: 'application/vnd.google-apps.spreadsheet' }, f.blob).id;
         var ss = SpreadsheetApp.openById(tmpId), sheets = ss.getSheets().map(function (s) { return { name: s.getName(), rows: s.getDataRange().getValues() }; });
         var r = parseRows_(sheets, name);
         if (r.errors.length) { res.skipped.push(name + ': ' + r.errors[0]); return; }
