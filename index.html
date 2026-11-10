@@ -118,6 +118,7 @@ td.desc{white-space:normal;min-width:220px;max-width:340px}
 table.ss th,table.ss td{padding:7px 7px}table.ss th{white-space:normal;vertical-align:bottom;line-height:1.2;font-size:11px}table.ss td.desc{min-width:190px;max-width:250px}
 .ss th.ck,.ss td.ck{width:32px;text-align:center}.ss th.dsc,.ss td.desc{text-align:left}
 .ss .lnk{border:0;background:none;padding:0;font:inherit;font-weight:500;color:var(--accent);text-align:left}.ss .lnk:hover{text-decoration:underline}
+.ssdact{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap}
 .ss tr.open{box-shadow:inset 3px 0 0 var(--accent)}.ssd{margin-top:12px}
 .exgrid.wide{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
 .exgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:4px 12px;margin-top:6px}.exchk{display:flex;gap:6px;align-items:center;cursor:pointer}.exchk.all{font-weight:500}.exchk.dim{opacity:.55}
@@ -580,7 +581,7 @@ function ssDetail(all){
   var r=S.ssOpen?(all||ssRows()).filter(function(x){return x.id===S.ssOpen})[0]:null;
   if(!r){host.innerHTML='';return}
   var p=r.pts,orows=ssOutletRows(r);
-  var h='<section class="panel ss ssd"><header><h2>'+esc(r.d)+'</h2><span class="sub">'+esc(r.id)+' · '+esc(r.b)+' · '+esc(r.first)+(r.first===r.last?'':' to '+esc(r.last))+'</span><button class="btn sm" id="ssDClose" type="button">Close</button></header><div class="body">';
+  var h='<section class="panel ss ssd"><header><h2>'+esc(r.d)+'</h2><span class="sub">'+esc(r.id)+' · '+esc(r.b)+' · '+esc(r.first)+(r.first===r.last?'':' to '+esc(r.last))+'</span><span class="ssdact"><button class="btn primary sm" id="ssDExport" type="button">Export to Excel</button><button class="btn sm" id="ssDClose" type="button">Close</button></span></header><div class="body">';
   h+='<div class="two"><div><div class="sub">On hand by week · all outlets</div><div class="chart" id="ssC1"></div></div><div><div class="sub">Sold by week · all outlets</div><div class="chart" id="ssC2"></div></div></div>';
   h+='<div class="two" style="margin-top:14px"><div><div class="sub" style="margin-bottom:6px">By week</div><div class="tbl" style="max-height:340px;overflow:auto"><table><thead><tr><th>Week</th><th>On hand</th><th>Sold</th><th>Rate</th><th>Outlets in stock</th><th>Outlets at 0</th></tr></thead><tbody>';
   p.slice().reverse().forEach(function(x){h+='<tr><td>'+esc(ssWk(x))+'</td><td>'+fmt(x.soh)+'</td><td>'+fmt(x.st)+'</td><td>'+pct((x.soh+x.st)?x.st/(x.soh+x.st):null)+'</td><td>'+fmt(x.inS)+'</td><td>'+fmt(x.zero)+'</td></tr>'});
@@ -591,6 +592,7 @@ function ssDetail(all){
   var labs=p.map(function(x){return'Wk '+x.week}),ids=p.map(function(x){return x.wid});
   chart($('#ssC1'),{kind:'line',title:'On hand by week',name:'On hand',labels:labs,ids:ids,values:p.map(function(x){return x.soh}),color:'var(--s1)',selIdx:-1});
   chart($('#ssC2'),{kind:'bar',title:'Sold by week',name:'Sold',labels:labs,ids:ids,values:p.map(function(x){return x.st}),color:'var(--s2)',selIdx:-1});
+  $('#ssDExport').onclick=function(){runSsExport([r],SSTATS,true,true)};
   $('#ssDClose').onclick=function(){S.ssOpen=null;ssTable()}
 }
 function ssInit(){
@@ -621,9 +623,9 @@ function drawSsExport(){
   var sc=d.querySelector('.exbd'),top=sc?sc.scrollTop:0;
   d.innerHTML=h;var sc2=d.querySelector('.exbd');if(sc2)sc2.scrollTop=top
 }
-function runSsExport(){
-  var sel=ssSelected();if(!sel.length)return;
-  var stats=SSTATS.filter(function(s){return EXS.stats[s.k]});
+/* Builds and downloads the workbook. Called from the dialog (several SKUs, chosen stats) and from a SKU's detail panel (one SKU, everything). */
+function runSsExport(sel,stats,wkOn,outOn){
+  if(!sel||!sel.length)return;
   var wb=XLSX.utils.book_new();
   if(stats.length){
     var rows=[['Brand','Item ID','Description'].concat(stats.map(function(s){return s.l}))];
@@ -634,7 +636,7 @@ function runSsExport(){
     stats.forEach(function(s,i){if(!s.z)return;for(var r=1;r<rows.length;r++){var c=ws[XLSX.utils.encode_cell({r:r,c:3+i})];if(c)c.z=s.z}});
     XLSX.utils.book_append_sheet(wb,ws,'SKU stats')
   }
-  if(EXS.weekly){
+  if(wkOn){
     var wr=[['Brand','Item ID','Description','Year','Week','On hand','Sold','Sell-thru rate','Outlets in stock','Outlets at 0']];
     sel.forEach(function(r){r.pts.forEach(function(x){wr.push([r.b,r.id,r.d,x.year,x.week,x.soh,x.st,(x.soh+x.st)?+(x.st/(x.soh+x.st)).toFixed(4):null,x.inS,x.zero])})});
     var ww=XLSX.utils.aoa_to_sheet(wr);ww['!cols']=[{wch:14},{wch:16},{wch:58},{wch:6},{wch:6},{wch:9},{wch:9},{wch:14},{wch:15},{wch:12}];
@@ -642,7 +644,7 @@ function runSsExport(){
     for(var i=1;i<wr.length;i++){var c=ww['H'+(i+1)];if(c)c.z='0.0%'}
     XLSX.utils.book_append_sheet(wb,ww,'Weekly detail')
   }
-  if(EXS.outlet){
+  if(outOn){
     var orr=[['Brand','Item ID','Description','Outlet','On hand (latest week of SKU)','Total sold','Weeks with sales']];
     sel.forEach(function(r){ssOutletRows(r).forEach(function(x){orr.push([r.b,r.id,r.d,x.o,x.soh,x.st,x.wk])})});
     var wo=XLSX.utils.aoa_to_sheet(orr);wo['!cols']=[{wch:14},{wch:16},{wch:58},{wch:10},{wch:26},{wch:11},{wch:16}];
@@ -650,12 +652,13 @@ function runSsExport(){
     XLSX.utils.book_append_sheet(wb,wo,'Outlet detail')
   }
   var dt=new Date(),mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][dt.getMonth()];
-  var name='Murano_SKU_Stats_'+sel.length+(sel.length===1?'SKU_':'SKUs_')+dt.getDate()+mo+dt.getFullYear()+'.xlsx';
+  var stamp=dt.getDate()+mo+dt.getFullYear();
+  var name=sel.length===1?'Murano_SKU_'+String(sel[0].id).replace(/[^A-Za-z0-9_-]/g,'')+'_'+stamp+'.xlsx':'Murano_SKU_Stats_'+sel.length+'SKUs_'+stamp+'.xlsx';
   deliver(XLSX.write(wb,{type:'array',bookType:'xlsx'}),name);closeSsExport()
 }
 document.addEventListener('click',function(e){var t=e.target;if(!t)return;
   if(t.id==='ssX'||t.id==='ssDlg')closeSsExport();
-  if(t.id==='ssGo')runSsExport()
+  if(t.id==='ssGo')runSsExport(ssSelected(),SSTATS.filter(function(s){return EXS.stats[s.k]}),EXS.weekly,EXS.outlet)
 });
 document.addEventListener('change',function(e){var t=e.target;if(!t)return;
   if(t.id==='ssAllStats'){EXS.stats={};if(t.checked)SSTATS.forEach(function(s){EXS.stats[s.k]=true});drawSsExport()}
