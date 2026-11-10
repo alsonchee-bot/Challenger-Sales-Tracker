@@ -114,6 +114,12 @@ td.desc{white-space:normal;min-width:220px;max-width:340px}
 .exbox{background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:10px;width:min(560px,100%);max-height:90vh;display:flex;flex-direction:column}
 .exhd,.exft{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;gap:12px}.exhd{border-bottom:1px solid var(--line)}.exft{border-top:1px solid var(--line)}
 .exbd{padding:12px 16px;overflow:auto}.exsec{margin-bottom:16px}.exlab{font-weight:600;margin-bottom:6px}
+.sstool{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;margin-bottom:10px}.sstool .cnt{color:var(--ink-2);margin-right:auto}
+table.ss th,table.ss td{padding:7px 7px}table.ss th{white-space:normal;vertical-align:bottom;line-height:1.2;font-size:11px}table.ss td.desc{min-width:190px;max-width:250px}
+.ss th.ck,.ss td.ck{width:32px;text-align:center}.ss th.dsc,.ss td.desc{text-align:left}
+.ss .lnk{border:0;background:none;padding:0;font:inherit;font-weight:500;color:var(--accent);text-align:left}.ss .lnk:hover{text-decoration:underline}
+.ss tr.open{box-shadow:inset 3px 0 0 var(--accent)}.ssd{margin-top:12px}
+.exgrid.wide{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
 .exgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:4px 12px;margin-top:6px}.exchk{display:flex;gap:6px;align-items:center;cursor:pointer}.exchk.all{font-weight:500}.exchk.dim{opacity:.55}
 .exrange{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px}.exrange select{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:6px;padding:5px 8px}.exsum{color:var(--ink-3);font-size:13px}
 .shell{display:grid;grid-template-columns:260px minmax(0,1fr);gap:20px;align-items:start}
@@ -238,7 +244,7 @@ body.locked{overflow:hidden}body.locked .nav,body.locked #main,body.locked #user
 <script>
 (function(){
 'use strict';
-var S={all:[],brand:null,wantBrand:null,view:'overview',q:'',b:{metric:'soh',group:'outlet',type:'column',top:'10',order:'desc'},weeks:[],sel:null,outlet:null,heat:'soh',sortKey:'soh',sortDir:-1,skuSort:'soh',skuDir:-1,db:null,col:null,staged:[],confirmDel:null,loaded:false};
+var S={all:[],brand:null,wantBrand:null,view:'overview',q:'',b:{metric:'soh',group:'outlet',type:'column',top:'10',order:'desc'},weeks:[],sel:null,outlet:null,heat:'soh',sortKey:'soh',sortDir:-1,skuSort:'soh',skuDir:-1,ssSel:{},ssOpen:null,ssSort:'stT',ssDir:-1,db:null,col:null,staged:[],confirmDel:null,loaded:false};
 var $=function(s){return document.querySelector(s)};
 function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function fmt(n){return n==null||isNaN(n)?'–':Math.round(n).toLocaleString('en-US')}
@@ -377,7 +383,7 @@ function render(){
   var side=sideHtml(w),h='';
   if(S.brand==='ALL'){var tb=brands().length,pw=S.weeks.filter(function(x){return x.nb<tb});if(pw.length)h+='<div class="sub" style="margin:-6px 0 14px">'+pw.map(wlabel).join(', ')+(pw.length>1?' have':' has')+' data for fewer brands, so totals and week-to-week changes in All brands are not like for like.</div>'}
   if(S.view==='charts'){m.innerHTML=shell(side,h+chartsView(w));bindBar();drawCharts(w);return}
-  var V=['overview','outlets','grid','skus','weeks'].indexOf(S.view)<0?'overview':S.view;
+  var V=['overview','outlets','grid','skus','skustats','weeks'].indexOf(S.view)<0?'overview':S.view;
   if(V==='overview')h+='<div class="kpis">'+
    kpi('Stock on hand',fmt(t&&t.soh),delta(t&&t.soh,tp&&tp.soh,null,true))+
    kpi('Sell-thru (units)',fmt(t&&t.st),delta(t&&t.st,tp&&tp.st))+
@@ -389,6 +395,7 @@ function render(){
   if(V==='outlets')h+='<section class="panel"><header><h2>Outlets</h2><span class="sub">'+esc(wlabel(w))+' · click a row to focus on one outlet</span></header><div class="body tbl" style="max-height:560px;overflow:auto" id="outTbl"></div></section>';
   if(V==='grid')h+='<section class="panel"><header><h2>Outlet × SKU grid</h2><div class="seg" role="group" aria-label="Metric"><button data-heat="soh" aria-pressed="'+(S.heat==='soh')+'">Stock on hand</button><button data-heat="st" aria-pressed="'+(S.heat==='st')+'">Sell-thru</button></div></header><div class="body"><div class="heat" id="heat"></div><div class="legend" style="margin-top:10px" id="heatLegend"></div></div></section>';
   if(V==='skus')h+='<section class="panel"><header><h2>SKUs</h2><span class="sub">'+esc(wlabel(w))+(S.outlet?' · '+esc(S.outlet):' · all outlets')+'</span></header><div class="body tbl" id="skuTbl"></div></section>';
+  if(V==='skustats')h+='<section class="panel ss"><header><h2>SKU stats</h2><span class="sub">All loaded weeks · all outlets · '+(S.brand&&S.brand!=='ALL'?esc(S.brand):'all brands')+' · the week and outlet filters do not apply here</span></header><div class="body"><div class="sstool"><span class="cnt" id="ssCount" aria-live="polite"></span><button class="btn sm" id="ssSelAll" type="button">Select all shown</button><button class="btn sm" id="ssClear" type="button">Clear selection</button><button class="btn primary sm" id="ssExport" type="button">Export selected…</button></div><div class="tbl" id="ssTbl" style="max-height:560px;overflow:auto"></div><div class="sub" style="margin-top:8px">Sell-thru rate = sold ÷ (sold + on hand). Weeks of cover = on hand ÷ average weekly sold over the last 4 loaded weeks. Click an item name for its weekly and outlet detail.</div></div></section><div id="ssDetail"></div>';
   if(V==='weeks')h+='<section class="panel"><header><h2>Loaded weeks</h2><span class="sub">Importing a week that already exists replaces it.</span></header><div class="body tbl" id="wkTbl"></div></section>';
   m.innerHTML=shell(side,h);
   bindBar();
@@ -397,7 +404,7 @@ function render(){
   var lab=S.weeks.map(wlabel),ids=S.weeks.map(function(x){return x.id});
   if(V==='overview')chart($('#chSoh'),{kind:'line',title:'Stock on hand by week',name:'SOH',labels:lab,ids:ids,values:ser.map(function(x){return x.soh}),color:'var(--s1)',selIdx:idx});
   if(V==='overview')chart($('#chSt'),{kind:'bar',title:'Sell-thru by week',name:'Sold',labels:lab,ids:ids,values:ser.map(function(x){return x.st}),color:'var(--s2)',selIdx:idx,extra:ser.map(function(x){return' · rate '+pct(x.rate==null?(x.soh+x.st?x.st/(x.soh+x.st):null):x.rate)})});
-  if(V==='outlets')outletTable(w);if(V==='grid')heatmap(w);if(V==='skus')skuTable(w);if(V==='weeks')weekTable();
+  if(V==='outlets')outletTable(w);if(V==='grid')heatmap(w);if(V==='skus')skuTable(w);if(V==='skustats')ssInit();if(V==='weeks')weekTable();
   document.querySelectorAll('[data-heat]').forEach(function(b){b.onclick=function(){S.heat=b.getAttribute('data-heat');render()}});
 }
 function kpi(l,v,d){return'<div class="kpi"><div class="l">'+l+'</div><div class="v">'+v+'</div><div class="d">'+d+'</div></div>'}
@@ -472,6 +479,192 @@ function weekTable(){
   el.querySelectorAll('[data-del]').forEach(function(b){b.onclick=function(){var k=b.getAttribute('data-del');S.confirmDel=null;removeWeek(k).then(function(){toast('Removed '+k.replace('|',' · '));if(!S.col)render()}).catch(function(e){toast('Could not remove: '+(e&&e.message||e))})}})
 }
 
+/* ---------- SKU stats ---------- */
+/* One row per SKU across every loaded week (all outlets). k = key, l = label, f = display format, z = Excel number format, t = text value */
+var SSTATS=[
+  {k:'weeks',l:'Weeks of data',f:fmt},
+  {k:'first',l:'First week',t:1},
+  {k:'last',l:'Latest week',t:1},
+  {k:'sohL',l:'On hand (latest week)',f:fmt},
+  {k:'stL',l:'Sold (latest week)',f:fmt},
+  {k:'rateL',l:'Sell-thru rate (latest week)',f:pct,z:'0.0%'},
+  {k:'cov',l:'Weeks of cover (latest week)',f:f1,z:'0.0'},
+  {k:'stT',l:'Total sold (all weeks)',f:fmt},
+  {k:'stA',l:'Average weekly sold',f:f1,z:'0.0'},
+  {k:'stP',l:'Peak weekly sold',f:fmt},
+  {k:'peakWk',l:'Peak week',t:1},
+  {k:'stZ',l:'Weeks with no sales',f:fmt},
+  {k:'sohA',l:'Average weekly on hand',f:f1,z:'0.0'},
+  {k:'oStock',l:'Outlets in stock (latest week)',f:fmt},
+  {k:'oZero',l:'Outlets at 0 (latest week)',f:fmt},
+  {k:'oN',l:'Outlets listed (latest week)',f:fmt}
+];
+var SSCOLS=[['weeks','Weeks'],['sohL','On hand'],['stL','Sold'],['rateL','Rate'],['cov','Wks cover'],['stT','Total sold'],['stA','Avg wkly sold'],['stP','Peak wkly sold'],['stZ','No-sale wks'],['oStock','Outlets in stock'],['oZero','Outlets at 0']];
+function ssWk(p){return p.year+' Wk '+p.week}
+function ssRows(){
+  var src=(S.brand&&S.brand!=='ALL')?S.all.filter(function(w){return w.brand===S.brand}):S.all;
+  var by={},order=[],bw={};
+  S.all.forEach(function(w){(bw[w.brand]=bw[w.brand]||[]).push(w)});
+  src.forEach(function(w){
+    var O=w.outlets.length;
+    w.skuIds.forEach(function(id,s){
+      var soh=0,st=0,inS=0,zero=0;
+      for(var o=0;o<O;o++){var a=w.soh[s*O+o]||0;soh+=a;st+=w.st[s*O+o]||0;if(a>0)inS++;else zero++}
+      var r=by[id];if(!r){r=by[id]={id:id,d:w.skuDescs[s],b:w.brand,pts:[]};order.push(id)}
+      if(w.skuDescs[s])r.d=w.skuDescs[s];
+      r.pts.push({wid:w.id,year:w.year,week:w.week,soh:soh,st:st,inS:inS,zero:zero,O:O})
+    })
+  });
+  return order.map(function(id){
+    var r=by[id],p=r.pts,n=p.length,last=p[n-1],tot=0,peak=-1,pk=null,zw=0,ss=0,byW={};
+    p.forEach(function(x){byW[x.wid]=x;tot+=x.st;ss+=x.soh;if(x.st>peak){peak=x.st;pk=x}if(x.st===0)zw++});
+    /* weeks of cover: on hand now / average weekly sold over the last (up to) 4 loaded weeks of this brand ending at the SKU's latest week */
+    var list=bw[r.b]||[],idx=-1,i;for(i=0;i<list.length;i++)if(list[i].id===last.wid){idx=i;break}
+    var sum=0,c=0;if(idx>=0)for(i=Math.max(0,idx-3);i<=idx;i++){var q=byW[list[i].id];if(q){sum+=q.st;c++}}
+    r.weeks=n;r.first=ssWk(p[0]);r.last=ssWk(last);r.sohL=last.soh;r.stL=last.st;
+    r.rateL=(last.soh+last.st)?last.st/(last.soh+last.st):null;
+    r.cov=(c&&sum)?last.soh/(sum/c):null;
+    r.stT=tot;r.stA=tot/n;r.stP=peak;r.peakWk=pk?ssWk(pk):'';r.stZ=zw;r.sohA=ss/n;
+    r.oStock=last.inS;r.oZero=last.zero;r.oN=last.O;
+    return r
+  })
+}
+function ssSorted(rows){
+  var k=S.ssSort,d=S.ssDir;
+  return rows.sort(function(a,b){var x=k==='d'?String(a.d).toLowerCase():(a[k]==null?-Infinity:a[k]),y=k==='d'?String(b.d).toLowerCase():(b[k]==null?-Infinity:b[k]);return(x<y?-1:x>y?1:0)*d})
+}
+function ssCount(all,shown){
+  var n=0,hidden=0,shownIds={};shown.forEach(function(r){shownIds[r.id]=1});
+  all.forEach(function(r){if(S.ssSel[r.id]){n++;if(!shownIds[r.id])hidden++}});
+  var el=$('#ssCount');if(el)el.textContent=n+' SKU'+(n===1?'':'s')+' selected'+(hidden?' ('+hidden+' hidden by search)':'');
+  var b=$('#ssExport');if(b)b.disabled=!n;
+  var c=$('#ssClear');if(c)c.disabled=!n;
+  var ck=$('#ssAllCk');if(ck){var on=shown.filter(function(r){return S.ssSel[r.id]}).length;ck.checked=!!shown.length&&on===shown.length;ck.indeterminate=on>0&&on<shown.length}
+  return n
+}
+function ssTable(){
+  var el=$('#ssTbl');if(!el)return;
+  var all=ssRows(),rows=ssSorted(all.filter(function(r){return qm(r.d+' '+r.id+' '+r.b)}));
+  qnote(rows.length,all.length,'SKUs');
+  var k=S.ssSort,d=S.ssDir,top=el.scrollTop;
+  var h='<table class="ss"><thead><tr><th class="ck"><input type="checkbox" id="ssAllCk" aria-label="Select all SKUs shown"></th>'+th('Item','d',k,d,'ss').replace('<th class="','<th class="dsc ');
+  SSCOLS.forEach(function(c){h+=th(c[1],c[0],k,d,'ss')});
+  h+='</tr></thead><tbody>';
+  rows.forEach(function(r){
+    var on=!!S.ssSel[r.id];
+    h+='<tr class="'+(on?'sel':'')+(S.ssOpen===r.id?' open':'')+'" data-row="'+esc(r.id)+'"><td class="ck"><input type="checkbox" data-ssk="'+esc(r.id)+'"'+(on?' checked':'')+' aria-label="Select '+esc(r.id)+'"></td>'+
+      '<td class="desc"><button type="button" class="lnk" data-sso="'+esc(r.id)+'" title="Show weekly and outlet detail">'+esc(short(r.d))+'</button><div class="mono">'+esc(r.id)+(r.b?' · '+esc(r.b):'')+' · '+esc(r.first)+(r.first===r.last?'':' – '+esc(r.last))+'</div></td>'+
+      SSCOLS.map(function(c){var s=SSTATS.filter(function(x){return x.k===c[0]})[0];return'<td>'+s.f(r[c[0]])+'</td>'}).join('')+'</tr>'});
+  if(!rows.length)h+='<tr><td colspan="'+(SSCOLS.length+2)+'" class="sub" style="padding:16px">'+(all.length?'No SKUs match “'+esc(S.q)+'”.':'No SKUs loaded.')+'</td></tr>';
+  el.innerHTML=h+'</tbody></table>';el.scrollTop=top;
+  ssCount(all,rows);
+  el.querySelectorAll('[data-ss]').forEach(function(b){b.onclick=function(){var key=b.getAttribute('data-ss');if(S.ssSort===key)S.ssDir*=-1;else{S.ssSort=key;S.ssDir=key==='d'?1:-1}ssTable()}});
+  el.querySelectorAll('[data-ssk]').forEach(function(c){c.onchange=function(){
+    var id=c.getAttribute('data-ssk');if(c.checked)S.ssSel[id]=true;else delete S.ssSel[id];
+    var tr=c.closest('tr');if(tr)tr.classList.toggle('sel',c.checked);ssCount(all,rows)}});
+  var ac=$('#ssAllCk');if(ac)ac.onchange=function(){rows.forEach(function(r){if(ac.checked)S.ssSel[r.id]=true;else delete S.ssSel[r.id]});ssTable()};
+  el.querySelectorAll('[data-sso]').forEach(function(b){b.onclick=function(){var id=b.getAttribute('data-sso');S.ssOpen=S.ssOpen===id?null:id;ssTable();if(S.ssOpen){var dv=$('#ssDetail');if(dv)dv.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth',block:'nearest'})}}});
+  ssDetail(all)
+}
+function ssOutletRows(r){
+  var m={},order=[];
+  S.all.filter(function(w){return w.brand===r.b}).forEach(function(w){
+    var s=w.skuIds.indexOf(r.id);if(s<0)return;var O=w.outlets.length;
+    w.outlets.forEach(function(o,j){var x=m[o];if(!x){x=m[o]={o:o,st:0,wk:0,soh:null,lastW:null};order.push(o)}
+      var st=w.st[s*O+j]||0;x.st+=st;if(st>0)x.wk++;x.soh=w.soh[s*O+j]||0;x.lastW=w.id})});
+  var lastId=r.pts[r.pts.length-1].wid;
+  return order.map(function(o){var x=m[o];return{o:x.o,st:x.st,wk:x.wk,soh:x.lastW===lastId?x.soh:null}}).sort(function(a,b){return b.st-a.st||(a.o<b.o?-1:1)})
+}
+function ssDetail(all){
+  var host=$('#ssDetail');if(!host)return;
+  var r=S.ssOpen?(all||ssRows()).filter(function(x){return x.id===S.ssOpen})[0]:null;
+  if(!r){host.innerHTML='';return}
+  var p=r.pts,orows=ssOutletRows(r);
+  var h='<section class="panel ss ssd"><header><h2>'+esc(r.d)+'</h2><span class="sub">'+esc(r.id)+' · '+esc(r.b)+' · '+esc(r.first)+(r.first===r.last?'':' to '+esc(r.last))+'</span><button class="btn sm" id="ssDClose" type="button">Close</button></header><div class="body">';
+  h+='<div class="two"><div><div class="sub">On hand by week · all outlets</div><div class="chart" id="ssC1"></div></div><div><div class="sub">Sold by week · all outlets</div><div class="chart" id="ssC2"></div></div></div>';
+  h+='<div class="two" style="margin-top:14px"><div><div class="sub" style="margin-bottom:6px">By week</div><div class="tbl" style="max-height:340px;overflow:auto"><table><thead><tr><th>Week</th><th>On hand</th><th>Sold</th><th>Rate</th><th>Outlets in stock</th><th>Outlets at 0</th></tr></thead><tbody>';
+  p.slice().reverse().forEach(function(x){h+='<tr><td>'+esc(ssWk(x))+'</td><td>'+fmt(x.soh)+'</td><td>'+fmt(x.st)+'</td><td>'+pct((x.soh+x.st)?x.st/(x.soh+x.st):null)+'</td><td>'+fmt(x.inS)+'</td><td>'+fmt(x.zero)+'</td></tr>'});
+  h+='</tbody></table></div></div><div><div class="sub" style="margin-bottom:6px">By outlet · on hand is for '+esc(r.last)+'</div><div class="tbl" style="max-height:340px;overflow:auto"><table><thead><tr><th>Outlet</th><th>On hand</th><th>Total sold</th><th>Weeks with sales</th></tr></thead><tbody>';
+  orows.forEach(function(x){h+='<tr><td>'+esc(x.o)+'</td><td>'+(x.soh==null?'–':fmt(x.soh))+'</td><td>'+fmt(x.st)+'</td><td>'+fmt(x.wk)+'</td></tr>'});
+  h+='</tbody></table></div></div></div></div></section>';
+  host.innerHTML=h;
+  var labs=p.map(function(x){return'Wk '+x.week}),ids=p.map(function(x){return x.wid});
+  chart($('#ssC1'),{kind:'line',title:'On hand by week',name:'On hand',labels:labs,ids:ids,values:p.map(function(x){return x.soh}),color:'var(--s1)',selIdx:-1});
+  chart($('#ssC2'),{kind:'bar',title:'Sold by week',name:'Sold',labels:labs,ids:ids,values:p.map(function(x){return x.st}),color:'var(--s2)',selIdx:-1});
+  $('#ssDClose').onclick=function(){S.ssOpen=null;ssTable()}
+}
+function ssInit(){
+  $('#ssSelAll').onclick=function(){ssRows().filter(function(r){return qm(r.d+' '+r.id+' '+r.b)}).forEach(function(r){S.ssSel[r.id]=true});ssTable()};
+  $('#ssClear').onclick=function(){S.ssSel={};ssTable()};
+  $('#ssExport').onclick=openSsExport;
+  ssTable()
+}
+/* export dialog for the SKU stats view */
+var EXS={stats:{},weekly:true,outlet:false};
+function ssSelected(){return ssSorted(ssRows().filter(function(r){return S.ssSel[r.id]}))}
+function openSsExport(){
+  if(!ssSelected().length)return;
+  EXS.stats={};SSTATS.forEach(function(s){EXS.stats[s.k]=true});EXS.weekly=true;EXS.outlet=false;
+  var d=$('#ssDlg');if(!d){d=document.createElement('div');d.id='ssDlg';d.className='exov';document.body.appendChild(d)}
+  d.hidden=false;drawSsExport()
+}
+function closeSsExport(){var d=$('#ssDlg');if(d)d.hidden=true}
+function drawSsExport(){
+  var d=$('#ssDlg'),sel=ssSelected(),nStats=SSTATS.filter(function(s){return EXS.stats[s.k]}).length,allS=nStats===SSTATS.length;
+  var h='<div class="exbox" role="dialog" aria-label="Export SKU stats"><div class="exhd"><b>Export SKU stats</b><button class="btn sm" id="ssX" type="button">Close</button></div><div class="exbd">';
+  h+='<div class="exsec"><div class="exlab">SKUs</div><div class="sub">'+sel.length+' selected. Brand, item ID and description are always included.</div></div>';
+  h+='<div class="exsec"><div class="exlab">Stats</div><label class="exchk all"><input type="checkbox" id="ssAllStats"'+(allS?' checked':'')+'> All stats</label><div class="exgrid wide">';
+  SSTATS.forEach(function(s){h+='<label class="exchk"><input type="checkbox" data-sst="'+s.k+'"'+(EXS.stats[s.k]?' checked':'')+'> '+esc(s.l)+'</label>'});
+  h+='</div></div><div class="exsec"><div class="exlab">Extra sheets</div><label class="exchk"><input type="checkbox" id="ssWk"'+(EXS.weekly?' checked':'')+'> Weekly detail (one row per SKU per week: on hand, sold, rate, outlets in stock)</label>';
+  h+='<label class="exchk" style="margin-top:6px"><input type="checkbox" id="ssOut"'+(EXS.outlet?' checked':'')+'> Outlet detail (one row per SKU per outlet: latest on hand, total sold)</label></div></div>';
+  h+='<div class="exft"><span class="exsum">'+sel.length+' SKU'+(sel.length===1?'':'s')+' · '+nStats+' stat'+(nStats===1?'':'s')+(EXS.weekly?' · weekly':'')+(EXS.outlet?' · outlet':'')+'</span><button class="btn primary" id="ssGo" type="button"'+(sel.length&&(nStats||EXS.weekly||EXS.outlet)?'':' disabled')+'>Export to Excel</button></div></div>';
+  var sc=d.querySelector('.exbd'),top=sc?sc.scrollTop:0;
+  d.innerHTML=h;var sc2=d.querySelector('.exbd');if(sc2)sc2.scrollTop=top
+}
+function runSsExport(){
+  var sel=ssSelected();if(!sel.length)return;
+  var stats=SSTATS.filter(function(s){return EXS.stats[s.k]});
+  var wb=XLSX.utils.book_new();
+  if(stats.length){
+    var rows=[['Brand','Item ID','Description'].concat(stats.map(function(s){return s.l}))];
+    sel.forEach(function(r){rows.push([r.b,r.id,r.d].concat(stats.map(function(s){var v=r[s.k];return v==null||(typeof v==='number'&&!isFinite(v))?null:(s.z&&typeof v==='number'?+v.toFixed(4):v)})))});
+    var ws=XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols']=[{wch:14},{wch:16},{wch:58}].concat(stats.map(function(s){return{wch:Math.max(12,s.l.length+2)}}));
+    ws['!autofilter']={ref:XLSX.utils.encode_range({s:{r:0,c:0},e:{r:rows.length-1,c:rows[0].length-1}})};
+    stats.forEach(function(s,i){if(!s.z)return;for(var r=1;r<rows.length;r++){var c=ws[XLSX.utils.encode_cell({r:r,c:3+i})];if(c)c.z=s.z}});
+    XLSX.utils.book_append_sheet(wb,ws,'SKU stats')
+  }
+  if(EXS.weekly){
+    var wr=[['Brand','Item ID','Description','Year','Week','On hand','Sold','Sell-thru rate','Outlets in stock','Outlets at 0']];
+    sel.forEach(function(r){r.pts.forEach(function(x){wr.push([r.b,r.id,r.d,x.year,x.week,x.soh,x.st,(x.soh+x.st)?+(x.st/(x.soh+x.st)).toFixed(4):null,x.inS,x.zero])})});
+    var ww=XLSX.utils.aoa_to_sheet(wr);ww['!cols']=[{wch:14},{wch:16},{wch:58},{wch:6},{wch:6},{wch:9},{wch:9},{wch:14},{wch:15},{wch:12}];
+    ww['!autofilter']={ref:'A1:J'+wr.length};
+    for(var i=1;i<wr.length;i++){var c=ww['H'+(i+1)];if(c)c.z='0.0%'}
+    XLSX.utils.book_append_sheet(wb,ww,'Weekly detail')
+  }
+  if(EXS.outlet){
+    var orr=[['Brand','Item ID','Description','Outlet','On hand (latest week of SKU)','Total sold','Weeks with sales']];
+    sel.forEach(function(r){ssOutletRows(r).forEach(function(x){orr.push([r.b,r.id,r.d,x.o,x.soh,x.st,x.wk])})});
+    var wo=XLSX.utils.aoa_to_sheet(orr);wo['!cols']=[{wch:14},{wch:16},{wch:58},{wch:10},{wch:26},{wch:11},{wch:16}];
+    wo['!autofilter']={ref:'A1:G'+orr.length};
+    XLSX.utils.book_append_sheet(wb,wo,'Outlet detail')
+  }
+  var dt=new Date(),mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][dt.getMonth()];
+  var name='Murano_SKU_Stats_'+sel.length+(sel.length===1?'SKU_':'SKUs_')+dt.getDate()+mo+dt.getFullYear()+'.xlsx';
+  deliver(XLSX.write(wb,{type:'array',bookType:'xlsx'}),name);closeSsExport()
+}
+document.addEventListener('click',function(e){var t=e.target;if(!t)return;
+  if(t.id==='ssX'||t.id==='ssDlg')closeSsExport();
+  if(t.id==='ssGo')runSsExport()
+});
+document.addEventListener('change',function(e){var t=e.target;if(!t)return;
+  if(t.id==='ssAllStats'){EXS.stats={};if(t.checked)SSTATS.forEach(function(s){EXS.stats[s.k]=true});drawSsExport()}
+  else if(t.getAttribute&&t.getAttribute('data-sst')!=null){EXS.stats[t.getAttribute('data-sst')]=t.checked;drawSsExport()}
+  else if(t.id==='ssWk'){EXS.weekly=t.checked;drawSsExport()}
+  else if(t.id==='ssOut'){EXS.outlet=t.checked;drawSsExport()}
+});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeSsExport()});
+
 /* ---------- charts view ---------- */
 var PAL=['var(--s1)','var(--s2)','var(--s3)','var(--s4)','var(--s5)'];
 var METRICS={soh:{l:'Stock on hand',c:'var(--s1)'},st:{l:'Sold (sell-thru units)',c:'var(--s2)'},rate:{l:'Sell-thru rate',c:'var(--s3)'},cover:{l:'Weeks of cover',c:'var(--s1)'},so:{l:'Stock-out cells (SKU × outlet at 0)',c:'var(--crit)'}};
@@ -516,8 +709,8 @@ function sideHtml(w){
   return s
 }
 function submenu(w){
-  var V=S.view,items=[['overview','Overview','KPIs, weekly trend'],['outlets','Outlets',w.outlets.length],['grid','Outlet × SKU grid',''],['skus','SKUs',w.skuIds.length],['charts','Charts',''],['weeks','Loaded weeks',S.weeks.length]];
-  return'<nav class="submenu" aria-label="Data to view">'+items.map(function(it){var on=(V===it[0])||(it[0]==='overview'&&['overview','outlets','grid','skus','charts','weeks'].indexOf(V)<0);
+  var V=S.view,items=[['overview','Overview','KPIs, weekly trend'],['outlets','Outlets',w.outlets.length],['grid','Outlet × SKU grid',''],['skus','SKUs',w.skuIds.length],['skustats','SKU stats',''],['charts','Charts',''],['weeks','Loaded weeks',S.weeks.length]];
+  return'<nav class="submenu" aria-label="Data to view">'+items.map(function(it){var on=(V===it[0])||(it[0]==='overview'&&['overview','outlets','grid','skus','skustats','charts','weeks'].indexOf(V)<0);
     return'<button type="button" class="smi'+(on?' on':'')+'" data-sec="'+it[0]+'" aria-pressed="'+on+'"><span class="smt">'+it[1]+'</span>'+(typeof it[2]==='number'?'<span class="smn">'+it[2]+'</span>':'')+'</button>'}).join('')+'</nav>'
 }
 function selHtml(id,label,opts,cur){return'<div class="field"><label for="'+id+'">'+label+'</label><select id="'+id+'">'+opts.map(function(o){return'<option value="'+esc(o[0])+'"'+(String(cur)===String(o[0])?' selected':'')+'>'+esc(o[1])+'</option>'}).join('')+'</select></div>'}
@@ -657,10 +850,11 @@ function bindQ(){
   q.addEventListener('input',function(){
     S.q=q.value;var w=W(S.sel);if(!w)return;
     if(S.view==='overview'||S.view==='charts'){if(!S.q.trim())return;S.view='skus';render();var n=$('#q');if(n){n.focus();try{n.setSelectionRange(n.value.length,n.value.length)}catch(e){}}return}
-    if(S.view==='outlets')outletTable(w);else if(S.view==='grid')heatmap(w);else if(S.view==='skus')skuTable(w);else if(S.view==='weeks')weekTable();
+    if(S.view==='outlets')outletTable(w);else if(S.view==='grid')heatmap(w);else if(S.view==='skus')skuTable(w);else if(S.view==='skustats')ssTable();else if(S.view==='weeks')weekTable();
   });
   q.addEventListener('keydown',function(e){if(e.key==='Escape'&&q.value){q.value='';q.dispatchEvent(new Event('input'))}});
   if((S.q||'').trim()){var w=W(S.sel);if(w){if(S.view==='outlets')outletTable(w);else if(S.view==='grid')heatmap(w);else if(S.view==='skus')skuTable(w);else if(S.view==='weeks')weekTable()}}
+  /* SKU stats draws its own table in ssInit, so nothing more to do here */
 }
 function bindBar(){
   bindQ();

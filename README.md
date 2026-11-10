@@ -48,6 +48,19 @@ their own browser; Reset to published data returns them to what is in weeks.json
 - The data is public to anyone with the site URL. For private access use Vercel Deployment Protection
   (password or SSO, on paid plans), and keep the GitHub repository private.
 
+## SKU stats
+
+Data menu, SKU stats. One row per SKU across every loaded week and all outlets (the brand buttons still
+apply; the week and outlet filters do not). Use the search box to find SKUs by description, item ID or
+brand, tick the ones you want, then Export selected. In the export dialog choose which stats to include,
+and optionally add a Weekly detail sheet (SKU x week) and an Outlet detail sheet (SKU x outlet).
+Click an item name to see its weekly and outlet breakdown. Everything is calculated in the browser from the
+same data as the other views, so no database change is needed.
+
+Stats: weeks of data, first and latest week, on hand / sold / sell-thru rate / weeks of cover for the latest
+week, total, average and peak weekly sold, peak week, weeks with no sales, average weekly on hand, and
+outlets in stock / at 0 / listed in the latest week. "Latest week" is each SKU's own last week of data.
+
 ## Users and sign-in
 
 Sign-in uses Supabase Auth (`auth.users`, passwords stored as bcrypt hashes). Usernames map to `<username>@sellthru.example.com`. `public.profiles` links each auth user to a username, display name, role (`admin` / `user`) and a `must_change_password` flag. Only admins can add users, reset passwords or remove users (RPC functions `admin_*`). Self sign-up is blocked by a trigger on `auth.users`. All sell-thru data is readable and writable only by signed-in users.
