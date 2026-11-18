@@ -151,7 +151,7 @@ body{margin:0;padding:0 0 48px;font-size:15px}
 .nav .logo{display:flex;align-items:center;gap:12px;margin-right:6px}.nav .logo img{height:46px;width:auto;background:#fff;border-radius:6px;padding:3px 8px}.nav .logo span{font-weight:500;font-size:20px}
 .nav .org{background:#053a5c;border-radius:22px;padding:10px 22px;font-weight:500;margin:0 18px 0 10px}
 .nav a{color:#cfe3f1;text-decoration:none;padding:21px 14px 17px;border-bottom:3px solid transparent;font-weight:500;cursor:pointer;display:inline-block}
-.nav a:hover{color:#fff}.nav a.on{color:#fff;border-bottom-color:#8fb4d0}
+.nav a[hidden]{display:none}.nav a:hover{color:#fff}.nav a.on{color:#fff;border-bottom-color:#8fb4d0}
 .nav .sp{flex:1}.nav .ic{width:42px;height:42px;border-radius:50%;background:#0b5a8a;display:grid;place-items:center;font-weight:600}
 .wrap{max-width:1360px;padding:0 32px;gap:18px}
 .top{padding-top:22px;align-items:center}
@@ -196,7 +196,7 @@ th{font-weight:600}
 .qnote{min-height:18px;margin:0 2px 8px}
 .btn[hidden]{display:none}
 .gate{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto}.gate[hidden]{display:none}
-body.locked{overflow:hidden}body.locked .nav,body.locked #main,body.locked #userBox{visibility:hidden}
+body.locked{overflow:hidden}body.locked .nav,body.locked #main,body.locked #concPage,body.locked #userBox{visibility:hidden}
 .gcard{width:min(400px,100%);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:24px;color:var(--ink)}
 .gcard h2{margin:0 0 4px;font-size:22px}
 .gbrand{display:flex;align-items:center;gap:12px;margin-bottom:18px}.gbrand img{height:44px;width:auto;border-radius:6px;border:1px solid var(--line-soft);padding:3px 8px;background:#fff}.gbrand span{font-weight:500;font-size:20px}
@@ -214,7 +214,7 @@ body.locked{overflow:hidden}body.locked .nav,body.locked #main,body.locked #user
 .ugrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}
 @media (max-width:520px){.ugrid{grid-template-columns:minmax(0,1fr)}}
 </style></head><body><div class="nav"><span class="logo"><img src="logo-murano.png" alt="Murano"><span>Analytics</span></span><span class="org">Challenger</span>
-<a class="on">Graphs</a><a data-nav="imp">Data input</a><a data-nav="exp">Export</a><span class="sp"></span><span class="ic">?</span><span class="ic">&#8962;</span></div>
+<a class="on" data-nav="graphs">Graphs</a><a data-nav="conc" id="navConc" hidden>Concession</a><a data-nav="imp">Data input</a><a data-nav="exp">Export</a><span class="sp"></span><span class="ic">?</span><span class="ic">&#8962;</span></div>
 
 <div class="wrap">
   <div class="top">
@@ -227,7 +227,7 @@ body.locked{overflow:hidden}body.locked .nav,body.locked #main,body.locked #user
       <input type="file" id="file" accept=".xlsx,.xls" multiple hidden>
       <button class="btn primary" id="btnImport">Import weekly file</button>
       <button class="btn" id="btnExport">Export data</button>
-      <span class="ubox" id="userBox" hidden><span class="uname" id="uName"></span><button class="btn" id="btnConc" type="button" hidden>Concessions</button><button class="btn" id="btnUsers" type="button" hidden>Users</button><button class="btn" id="btnPw" type="button">Password</button><button class="btn" id="btnOut" type="button">Sign out</button></span>
+      <span class="ubox" id="userBox" hidden><span class="uname" id="uName"></span><button class="btn" id="btnUsers" type="button" hidden>Users</button><button class="btn" id="btnPw" type="button">Password</button><button class="btn" id="btnOut" type="button">Sign out</button></span>
     </div>
   </div>
 
@@ -242,6 +242,10 @@ body.locked{overflow:hidden}body.locked .nav,body.locked #main,body.locked #user
 </div>
 <div id="tip"></div><div id="toast" role="status"></div>
 
+<div class="wrap" id="concPage" hidden>
+  <div class="top"><div><h1>Challenger concessions</h1><div class="sub">Monthly concession fees, contract validity and remaining commitment by brand and outlet</div></div></div>
+  <section class="panel"><div class="body" id="cBody">Loading…</div></section>
+</div>
 <script>
 (function(){
 'use strict';
@@ -1088,7 +1092,7 @@ var sb=(function(){
     lock:function(note){
       api.stop();api.started=false;save(null);PROF=null;S.all=[];S.weeks=[];S.loaded=false;LIVE.raw='';
       var ub=$('#userBox');if(ub)ub.hidden=true;var b=$('#storeBadge');if(b)b.hidden=true;
-      var d=$('#usrDlg');if(d)d.hidden=true;var cdl=$('#concDlg');if(cdl)cdl.hidden=true;var ip=$('#importPanel');if(ip)ip.hidden=true;
+      var d=$('#usrDlg');if(d)d.hidden=true;showTab('graphs');var ip=$('#importPanel');if(ip)ip.hidden=true;
       try{render()}catch(e){}
       api.gate('login',note)
     },
@@ -1122,7 +1126,7 @@ var sb=(function(){
     },
     enter:function(){
       api.started=true;setLocked(false);
-      var ub=$('#userBox');ub.hidden=false;$('#uName').textContent=PROF.display_name;$('#btnUsers').hidden=PROF.role!=='admin';$('#btnConc').hidden=PROF.role!=='admin';
+      var ub=$('#userBox');ub.hidden=false;$('#uName').textContent=PROF.display_name;$('#btnUsers').hidden=PROF.role!=='admin';$('#navConc').hidden=PROF.role!=='admin';
       loadLive(true);api.stop();
       pollT=setInterval(function(){if(!document.hidden&&!$('#importPanel').offsetParent&&!(($('#exDlg')&&!$('#exDlg').hidden)||($('#usrDlg')&&!$('#usrDlg').hidden)))loadLive(false)},60000)
     },
@@ -1162,12 +1166,7 @@ var sb=(function(){
     },
     usersAct:function(fn,okmsg){U.msg='';U.err='';return fn().then(function(){U.edit=null;U.del=null;U.msg=okmsg;return api.usersLoad()}).catch(function(e){U.err=e.message;api.usersDraw()})},
     /* ---- concession investment tracker (admin) ---- */
-    conc:function(){
-      var d=$('#concDlg');if(!d){d=document.createElement('div');d.id='concDlg';d.className='exov';document.body.appendChild(d)}
-      d.hidden=false;C.edit=null;C.del=null;C.msg='';C.err='';
-      d.innerHTML='<div class="exbox" style="width:min(860px,100%)" role="dialog" aria-label="Concessions"><div class="exhd"><b>Challenger concessions</b><button class="btn sm" id="cClose" type="button">Close</button></div><div class="exbd" id="cBody">Loading…</div></div>';
-      api.concLoad()
-    },
+    conc:function(){C.edit=null;C.del=null;C.msg='';C.err='';api.concLoad()},
     concLoad:function(){return rpc('concession_list',{}).then(function(a){C.list=a||[];api.concDraw()}).catch(function(e){C.err=e.message;api.concDraw()})},
     concInfo:function(r){
       var t=new Date(),td=new Date(t.getFullYear(),t.getMonth(),t.getDate()),fee=Number(r.monthly_fee)||0;
@@ -1202,7 +1201,7 @@ var sb=(function(){
     var t=tg.closest?tg.closest('button'):null;if(!t)return;
     if(t.id==='btnOut')api.signOut();
     else if(t.id==='btnUsers')api.users();
-    else if(t.id==='btnConc')api.conc();
+    
     else if(t.id==='cClose'){var cd=$('#concDlg');if(cd)cd.hidden=true}
     else if(t.getAttribute&&t.getAttribute('data-cedit')){C.edit=Number(t.getAttribute('data-cedit'));C.del=null;C.err='';C.msg='';api.concDraw()}
     else if(t.getAttribute&&t.getAttribute('data-cask')){C.del=Number(t.getAttribute('data-cask'));C.edit=null;C.err='';C.msg='';api.concDraw()}
@@ -1246,6 +1245,7 @@ var sb=(function(){
   document.addEventListener('keydown',function(e){if(e.key==='Escape'){var d=$('#usrDlg');if(d&&!d.hidden)d.hidden=true;var c=$('#concDlg');if(c&&!c.hidden)c.hidden=true}});
   return api
 })();
+window.concOpen=function(){sb.conc()};
 function liveBadge(){var bl=brands().length;badge(LIVE.off?'Live data unavailable':('Live data · '+S.all.length+' weeks, '+bl+' brand'+(bl===1?'':'s')))}
 function loadLive(first){
   return sb.rpc('get_weeks',{}).then(function(a){
@@ -1264,9 +1264,14 @@ document.addEventListener('visibilitychange',function(){if(!document.hidden&&S.l
 })();
 </script>
 <script>
+function showTab(k){var g=document.querySelector('.wrap:not(#concPage)'),c=document.getElementById('concPage');if(!g||!c)return;
+ var conc=k==='conc';g.hidden=conc;c.hidden=!conc;
+ document.querySelectorAll('.nav a[data-nav]').forEach(function(x){var n=x.getAttribute('data-nav');x.classList.toggle('on',n===k)});
+ if(conc){if(window.concOpen)window.concOpen();window.scrollTo(0,0)}}
 document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('[data-nav]');if(!a)return;var k=a.getAttribute('data-nav');
- if(k==='imp'){document.getElementById('btnImport').click();return}
- if(k==='exp'){document.getElementById('btnExport').click();return}
+ if(k==='graphs'||k==='conc'){showTab(k);return}
+ if(k==='imp'){showTab('graphs');document.getElementById('btnImport').click();return}
+ if(k==='exp'){showTab('graphs');document.getElementById('btnExport').click();return}
  });
 </script>
 <button type="button" class="totop" id="toTop" aria-label="Back to top" title="Back to top"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 19V6M6 11l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
