@@ -208,6 +208,7 @@ body.locked{overflow:hidden}body.locked .nav,body.locked #main,body.locked #user
 .gbtn{justify-content:center;min-height:44px;margin-top:6px}.gcard form>.gbtn{width:100%}.grow{display:flex;gap:8px}.grow .gbtn{flex:1}
 .ubox{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}.ubox[hidden]{display:none}.uname{font-weight:600;color:var(--ink-2)}
 .ulist{border:1px solid var(--line-soft);border-radius:8px;margin-bottom:16px}
+.tbl td.num,.tbl th.num{text-align:right;font-variant-numeric:tabular-nums}
 .urow{display:flex;flex-wrap:wrap;gap:8px 12px;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line-soft)}.urow:last-child{border-bottom:0}
 .uinfo{min-width:0}.uact{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.uform{display:flex;gap:6px;flex-wrap:wrap}.uform .uin{width:200px;padding:6px 8px;font-size:14px}
 .ugrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}
@@ -226,7 +227,7 @@ body.locked{overflow:hidden}body.locked .nav,body.locked #main,body.locked #user
       <input type="file" id="file" accept=".xlsx,.xls" multiple hidden>
       <button class="btn primary" id="btnImport">Import weekly file</button>
       <button class="btn" id="btnExport">Export data</button>
-      <span class="ubox" id="userBox" hidden><span class="uname" id="uName"></span><button class="btn" id="btnUsers" type="button" hidden>Users</button><button class="btn" id="btnPw" type="button">Password</button><button class="btn" id="btnOut" type="button">Sign out</button></span>
+      <span class="ubox" id="userBox" hidden><span class="uname" id="uName"></span><button class="btn" id="btnConc" type="button" hidden>Concessions</button><button class="btn" id="btnUsers" type="button" hidden>Users</button><button class="btn" id="btnPw" type="button">Password</button><button class="btn" id="btnOut" type="button">Sign out</button></span>
     </div>
   </div>
 
@@ -1056,7 +1057,7 @@ function badge(t){var b=$('#storeBadge');b.textContent=t;b.hidden=false}
 var SB_URL='https://eobbpalodywqszcrqyzt.supabase.co',SB_KEY='sb_publishable_Sz-CZ-ZnVDYRY0CMQR5Jyw_UzsDLEYa',MAIL='@sellthru.example.com';
 var LIVE={raw:'',ok:false,off:false},pollT=null;
 var sb=(function(){
-  var AUTH=null,PROF=null,U={list:[],edit:null,del:null,msg:'',err:''};
+  var AUTH=null,PROF=null,U={list:[],edit:null,del:null,msg:'',err:''};var C={list:[],edit:null,del:null,msg:'',err:''};
   try{AUTH=JSON.parse(localStorage.getItem('sb-auth2')||'null')}catch(e){}
   function save(a){AUTH=a;try{if(a)localStorage.setItem('sb-auth2',JSON.stringify(a));else localStorage.removeItem('sb-auth2')}catch(e){}}
   function call(method,path,body,tok){
@@ -1087,7 +1088,7 @@ var sb=(function(){
     lock:function(note){
       api.stop();api.started=false;save(null);PROF=null;S.all=[];S.weeks=[];S.loaded=false;LIVE.raw='';
       var ub=$('#userBox');if(ub)ub.hidden=true;var b=$('#storeBadge');if(b)b.hidden=true;
-      var d=$('#usrDlg');if(d)d.hidden=true;var ip=$('#importPanel');if(ip)ip.hidden=true;
+      var d=$('#usrDlg');if(d)d.hidden=true;var cdl=$('#concDlg');if(cdl)cdl.hidden=true;var ip=$('#importPanel');if(ip)ip.hidden=true;
       try{render()}catch(e){}
       api.gate('login',note)
     },
@@ -1121,7 +1122,7 @@ var sb=(function(){
     },
     enter:function(){
       api.started=true;setLocked(false);
-      var ub=$('#userBox');ub.hidden=false;$('#uName').textContent=PROF.display_name;$('#btnUsers').hidden=PROF.role!=='admin';
+      var ub=$('#userBox');ub.hidden=false;$('#uName').textContent=PROF.display_name;$('#btnUsers').hidden=PROF.role!=='admin';$('#btnConc').hidden=PROF.role!=='admin';
       loadLive(true);api.stop();
       pollT=setInterval(function(){if(!document.hidden&&!$('#importPanel').offsetParent&&!(($('#exDlg')&&!$('#exDlg').hidden)||($('#usrDlg')&&!$('#usrDlg').hidden)))loadLive(false)},60000)
     },
@@ -1160,13 +1161,53 @@ var sb=(function(){
       b.innerHTML=h
     },
     usersAct:function(fn,okmsg){U.msg='';U.err='';return fn().then(function(){U.edit=null;U.del=null;U.msg=okmsg;return api.usersLoad()}).catch(function(e){U.err=e.message;api.usersDraw()})},
+    /* ---- concession investment tracker (admin) ---- */
+    conc:function(){
+      var d=$('#concDlg');if(!d){d=document.createElement('div');d.id='concDlg';d.className='exov';document.body.appendChild(d)}
+      d.hidden=false;C.edit=null;C.del=null;C.msg='';C.err='';
+      d.innerHTML='<div class="exbox" style="width:min(860px,100%)" role="dialog" aria-label="Concessions"><div class="exhd"><b>Challenger concessions</b><button class="btn sm" id="cClose" type="button">Close</button></div><div class="exbd" id="cBody">Loading…</div></div>';
+      api.concLoad()
+    },
+    concLoad:function(){return rpc('concession_list',{}).then(function(a){C.list=a||[];api.concDraw()}).catch(function(e){C.err=e.message;api.concDraw()})},
+    concInfo:function(r){
+      var t=new Date(),td=new Date(t.getFullYear(),t.getMonth(),t.getDate()),fee=Number(r.monthly_fee)||0;
+      if(!r.end_date)return{st:'No end date',cls:'none',left:null,commit:null,live:fee>0};
+      var e=new Date(r.end_date+'T00:00:00');
+      if(e<td)return{st:'Ended',cls:'none',left:0,commit:0,live:false};
+      var m=(e.getFullYear()-td.getFullYear())*12+(e.getMonth()-td.getMonth())+1,days=Math.round((e-td)/864e5);
+      return{st:days<=90?'Ends within 90 days':'Active',cls:days<=90?'warn':'ok',left:m,commit:fee*m,live:true}
+    },
+    concDraw:function(){
+      var b=$('#cBody');if(!b)return;
+      var money=function(n){return n==null?'–':'S$'+Number(n).toLocaleString('en-GB',{minimumFractionDigits:0,maximumFractionDigits:2})},
+          fmtD=function(x){if(!x)return'–';var d=new Date(x+'T00:00:00');return d.getDate()+' '+d.toLocaleString('en-GB',{month:'short'})+' '+d.getFullYear()};
+      var tot={},grand={m:0,c:0};
+      C.list.forEach(function(r){var i=api.concInfo(r);if(i.live){tot[r.brand]=tot[r.brand]||{m:0,c:0};tot[r.brand].m+=Number(r.monthly_fee)||0;tot[r.brand].c+=i.commit||0;grand.m+=Number(r.monthly_fee)||0;grand.c+=i.commit||0}});
+      var h=(C.msg?'<div class="gok">'+esc2(C.msg)+'</div>':'')+(C.err?'<div class="gerr" role="alert">'+esc2(C.err)+'</div>':'');
+      h+='<div class="sub" style="margin-bottom:8px">Monthly fixed concession fees (SGD). "Remaining commitment" = monthly fee × months left up to and including the end month. Rows that have ended, or have no end date, are left out of the committed totals.</div>';
+      h+='<div class="tbl" style="overflow:auto"><table><thead><tr><th>Brand</th><th>Outlet</th><th class="num">Monthly fee</th><th>End date</th><th>Status</th><th class="num">Months left</th><th class="num">Remaining commitment</th><th></th></tr></thead><tbody>';
+      C.list.forEach(function(r){var i=api.concInfo(r);
+        if(C.edit===r.id){h+='<tr><td>'+esc2(r.brand)+'</td><td>'+esc2(r.outlet)+'</td><td colspan="5"><form class="uform" data-cedit="'+r.id+'" data-brand="'+esc2(r.brand)+'" data-outlet="'+esc2(r.outlet)+'"><input class="uin" name="fee" type="number" min="0" step="0.01" value="'+esc2(r.monthly_fee)+'" aria-label="Monthly fee" style="width:100px"><input class="uin" name="end" type="date" value="'+esc2(r.end_date||'')+'" aria-label="End date"><button class="btn sm primary" type="submit">Save</button><button class="btn sm" type="button" data-ccancel="1">Cancel</button></form></td><td></td></tr>';return}
+        h+='<tr><td>'+esc2(r.brand)+'</td><td>'+esc2(r.outlet)+'</td><td class="num">'+money(r.monthly_fee)+'</td><td>'+fmtD(r.end_date)+'</td><td><span class="pill '+i.cls+'">'+i.st+'</span></td><td class="num">'+(i.left==null?'–':i.left)+'</td><td class="num">'+money(i.commit)+'</td><td style="white-space:nowrap">'+
+          (C.del===r.id?'<button class="btn sm danger" data-cdel="'+r.id+'" type="button">Yes, remove</button> <button class="btn sm" data-ccancel="1" type="button">Keep</button>':'<button class="btn sm" data-cedit="'+r.id+'" type="button">Edit / renew</button> <button class="btn sm" data-cask="'+r.id+'" type="button">Remove</button>')+'</td></tr>'});
+      h+='</tbody><tfoot>'+Object.keys(tot).sort().map(function(k){return'<tr><td colspan="2"><b>'+esc2(k)+' (live)</b></td><td class="num"><b>'+money(tot[k].m)+'</b></td><td colspan="3"></td><td class="num"><b>'+money(tot[k].c)+'</b></td><td></td></tr>'}).join('')+'<tr><td colspan="2"><b>Total (live)</b></td><td class="num"><b>'+money(grand.m)+'</b></td><td colspan="3"></td><td class="num"><b>'+money(grand.c)+'</b></td><td></td></tr></tfoot></table></div>';
+      h+='<form id="cAdd" class="uadd" novalidate><div class="exlab">Add a concession</div><div class="ugrid"><div><label for="ncBrand">Brand</label><input id="ncBrand" type="text" autocomplete="off" placeholder="e.g. MAZER" required></div><div><label for="ncOutlet">Outlet</label><input id="ncOutlet" type="text" autocomplete="off" placeholder="e.g. Tampines" required></div><div><label for="ncFee">Monthly fee (S$)</label><input id="ncFee" type="number" min="0" step="0.01" required></div><div><label for="ncEnd">End date</label><input id="ncEnd" type="date"></div></div><div class="sub" style="margin:8px 0">To renew, use Edit / renew on the outlet and set the new end date (and fee, if it changed). Adding a brand and outlet that already exist updates that row.</div><button class="btn primary" type="submit">Save concession</button></form>';
+      b.innerHTML=h
+    },
+    concAct:function(fn,okmsg){C.msg='';C.err='';return fn().then(function(){C.edit=null;C.del=null;C.msg=okmsg;return api.concLoad()}).catch(function(e){C.err=e.message;api.concDraw()})},
     usersU:U
   };
   document.addEventListener('click',function(e){var tg=e.target;if(!tg)return;
-    if(tg.id==='usrDlg'){tg.hidden=true;return}
+    if(tg.id==='usrDlg'){tg.hidden=true;return}if(tg.id==='concDlg'){tg.hidden=true;return}
     var t=tg.closest?tg.closest('button'):null;if(!t)return;
     if(t.id==='btnOut')api.signOut();
     else if(t.id==='btnUsers')api.users();
+    else if(t.id==='btnConc')api.conc();
+    else if(t.id==='cClose'){var cd=$('#concDlg');if(cd)cd.hidden=true}
+    else if(t.getAttribute&&t.getAttribute('data-cedit')){C.edit=Number(t.getAttribute('data-cedit'));C.del=null;C.err='';C.msg='';api.concDraw()}
+    else if(t.getAttribute&&t.getAttribute('data-cask')){C.del=Number(t.getAttribute('data-cask'));C.edit=null;C.err='';C.msg='';api.concDraw()}
+    else if(t.getAttribute&&t.getAttribute('data-ccancel')){C.edit=null;C.del=null;api.concDraw()}
+    else if(t.getAttribute&&t.getAttribute('data-cdel')){var cid=Number(t.getAttribute('data-cdel'));api.concAct(function(){return rpc('concession_delete',{p_id:cid})},'Concession removed.')}
     else if(t.id==='btnPw')api.gate('change','',true);
     else if(t.id==='gCancel'){setLocked(false)}
     else if(t.id==='gOut')api.signOut();
@@ -1188,13 +1229,21 @@ var sb=(function(){
       }else{
         b.disabled=true;api.signIn($('#gUser').value,$('#gPass').value).then(function(){if(PROF.must_change_password)api.gate('change');else api.enter()}).catch(function(er){b.disabled=false;err.textContent=er.message;var p=$('#gPass');if(p){p.value='';p.focus()}})
       }
+    }else if(f.id==='cAdd'){e.preventDefault();
+      var cb=$('#ncBrand').value,co=$('#ncOutlet').value,cf=$('#ncFee').value;
+      if(!cb.trim()||!co.trim()||cf===''){C.err='Brand, outlet and monthly fee are required.';api.concDraw();return}
+      api.concAct(function(){return rpc('concession_save',{p:{brand:cb,outlet:co,monthly_fee:Number(cf),end_date:$('#ncEnd').value||null}})},'Saved '+cb.trim().toUpperCase()+' · '+co.trim()+'.')
+    }else if(f.getAttribute&&f.getAttribute('data-cedit')){e.preventDefault();
+      var fb=f.getAttribute('data-brand'),fo=f.getAttribute('data-outlet'),fe=f.querySelector('[name=fee]').value;
+      if(fe===''){C.err='Monthly fee is required.';api.concDraw();return}
+      api.concAct(function(){return rpc('concession_save',{p:{brand:fb,outlet:fo,monthly_fee:Number(fe),end_date:f.querySelector('[name=end]').value||null}})},'Updated '+fb+' · '+fo+'.')
     }else if(f.id==='uAdd'){e.preventDefault();
       var un=$('#nuUser').value,pw=$('#nuPass').value;
       api.usersAct(function(){return rpc('admin_create_user',{p_username:un,p_display_name:$('#nuName').value,p_password:pw,p_role:$('#nuRole').value})},'Added '+un.trim().toLowerCase()+'. Give them the initial password you set.')
     }else if(f.getAttribute&&f.getAttribute('data-reset')){e.preventDefault();var id=f.getAttribute('data-reset'),np=f.querySelector('.uin').value;
       api.usersAct(function(){return rpc('admin_set_password',{p_user:id,p_password:np})},'Password reset. The user must choose a new one at next sign-in.')}
   });
-  document.addEventListener('keydown',function(e){if(e.key==='Escape'){var d=$('#usrDlg');if(d&&!d.hidden)d.hidden=true}});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'){var d=$('#usrDlg');if(d&&!d.hidden)d.hidden=true;var c=$('#concDlg');if(c&&!c.hidden)c.hidden=true}});
   return api
 })();
 function liveBadge(){var bl=brands().length;badge(LIVE.off?'Live data unavailable':('Live data · '+S.all.length+' weeks, '+bl+' brand'+(bl===1?'':'s')))}
